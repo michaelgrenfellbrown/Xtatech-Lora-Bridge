@@ -12,6 +12,7 @@
     .page-header img { width: 120px; max-width: 34vw; height: auto; }
     .page-header h2 { margin: 0 0 4px; }
     .small { font-size: 12px; color: #666; }
+    .app-version { margin: -2px 0 2px; }
     .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
     .nav a { color: #164f8b; text-decoration: none; }
     .nav a:hover { text-decoration: underline; }
@@ -43,6 +44,7 @@
     <img src="/xtatech.png" alt="Xtatech logo"/>
     <div>
       <h2>Services</h2>
+      <div class="small app-version">Version <span data-app-version>v2.0.0</span></div>
       <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/metrics">Metrics</a><a href="/terminal">Terminal</a></div>
     </div>
   </div>
@@ -89,6 +91,16 @@
 </div>
 
 <script>
+async function loadAppVersion() {
+  try {
+    const r = await fetch('/api/version');
+    const j = await r.json();
+    document.querySelectorAll('[data-app-version]').forEach((el) => el.textContent = j.display || `v${j.version}`);
+  } catch {}
+}
+
+loadAppVersion();
+
 const statusEl = document.getElementById('service_status');
 const cfgEl = document.getElementById('cfg');
 const cfgStatusEl = document.getElementById('cfg_status');

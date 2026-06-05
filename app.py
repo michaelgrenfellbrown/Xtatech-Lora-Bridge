@@ -28,6 +28,7 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 WEB_DIR = BASE_DIR / "web"
 # Systemd unit name; must match install.sh (xtatech-lora-bridge.service)
 SERVICE_NAME = "xtatech-lora-bridge.service"
+APP_VERSION = "2.0.0"
 GITHUB_REPO_URL = "https://github.com/michaelgrenfellbrown/Xtatech-Lora-Bridge.git"
 REPO_CLONE_TARGET = Path.home() / "Downloads" / "Xtatech Lora Bridge"
 REPO_CLONE_LOG = Path.home() / "Downloads" / "xtatech-lora-bridge-clone.log"
@@ -1537,6 +1538,19 @@ async def logo_png():
     if not logo.exists():
         return PlainTextResponse("missing logo", status_code=404)
     return FileResponse(logo)
+
+
+@app.get("/api/version")
+async def api_version():
+    installed_commit = ""
+    if INSTALLED_COMMIT_PATH.exists():
+        installed_commit = INSTALLED_COMMIT_PATH.read_text(encoding="utf-8").strip()
+
+    return {
+        "version": APP_VERSION,
+        "installed_commit": installed_commit,
+        "display": f"v{APP_VERSION}" + (f" ({installed_commit[:7]})" if installed_commit else ""),
+    }
 
 
 @app.get("/api/status")
