@@ -1,0 +1,61 @@
+serial:
+  port: "auto"
+  baud: 115200
+  timeout_s: 1.0
+  reconnect_delay_s: 2.0
+
+mqtt:
+  host: "192.168.1.7"
+  port: 1883
+  username: "mqttuser"
+  password: "mqttuser"
+  client_id: "xtatech-lora-bridge"
+  base_topic: "lora"
+  qos: 0
+  retain: false
+  gateway_id: "pi-zero2-gw01"
+
+  discovery:
+    enabled: true
+    prefix: "homeassistant"
+    expire_after_s: 7200
+    republish_interval_s: 3600
+
+parsing:
+  # auto accepts JSON, key=value text, and raw lines. Use json for strict JSON only.
+  mode: "auto"
+  max_line_length: 4096
+
+topics:
+  id_keys: ["ID","id","device_id","node","devEui","deveui","name"]
+
+web:
+  host: "0.0.0.0"
+  port: 8088
+  # Leave these empty for HTTP. Set both paths for local-only HTTPS.
+  ssl_certfile: "certs/local.crt"
+  ssl_keyfile: "certs/local.key"
+  require_token: false
+  token: "changeme"
+
+storage:
+  ring_buffer_size: 300
+  log_buffer_size: 800
+
+heartbeat:
+  enabled: true
+  interval_s: 30
+  topic: "lora/_gateway"   # base for gateway topics, final topic: <topic>/<gateway_id>/state
+
+watchdog:
+  enabled: true
+  no_serial_data_s: 900     # reboot if no serial bytes for 15 min
+  require_port_missing: false  # if true, only reboot when /dev node missing
+  reboot: true
+
+terminal:
+  enabled: true
+  token: "changeme"
+  shell: "/bin/bash"
+  cwd: "/opt/xtatech-lora-bridge"
+  max_session_seconds: 3600

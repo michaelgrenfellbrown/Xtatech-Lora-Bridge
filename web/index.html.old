@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Xtatech LoRa → MQTT Bridge</title>
+  <style>
+    body { font-family: sans-serif; margin: 16px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .card { border:1px solid #ddd; padding:12px; border-radius:10px; }
+    pre { background:#111; color:#eee; padding:12px; border-radius:8px; overflow:auto; }
+    pre.light { background:#f6f6f6; color:#111; }
+    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 980px){ .grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <h2>Xtatech LoRa → MQTT Bridge</h2>
+
+  <div class="row">
+    <div class="card">
+      <div><b>Status</b></div>
+      <pre id="status" class="light">Loading…</pre>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <h3>Payloads (latest 30)</h3>
+      <pre id="out">Connecting…</pre>
+    </div>
+
+    <div>
+      <h3>Terminal / Logs</h3>
+      <pre id="log" style="height:420px;">Connecting…</pre>
+    </div>
+  </div>
+
+<script>
+async function loadStatus(){
+  const r = await fetch('/api/status');
+  const j = await r.json();
+  const s = document.getElementById('status');
+
+  if (!r.ok) { s.textContent = JSON.stringify(j, null, 2); return; }
+
+  s.textContent =
+    `MQTT: ${j.mqtt.connected ? 'connected' : 'disconnected'} → ${j.mqtt.host}:${j.mqtt.port} / ${j.mqtt.base_topic}\n` +
+    `Gateway: ${j.mqtt.gateway_id || '-'}\n` +
+    `Serial: ${j.serial.port} @ ${j.serial.baud} (8N1)\n` +
+    `Last Serial RX: ${j.runtime.last_serial_rx_iso || '-'}\n` +
+    `Parsing: ${j.parsing.mode}\n` +
+    `Web: ${location.origin}`;
+}
+loadStatus();
+setInterval(loadStatus, 5000);
+
+// payload websocket
+const out = document.getElementById('out');
+const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+ws.onopen = () => { out.textContent = 'Connected.\n'; ws.send('ping'); };
+ws.onmessage = (ev) => {
+  try { out.textContent = JSON.stringify(JSON.parse(ev.data), null, 2); }
+  catch(e){ out.textContent = ev.data; }
+  ws.send('ping');
+};
+
+// log websocket
+const logEl = document.getElementById('log');
+const wsl = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/logs');
+wsl.onopen = () => { logEl.textContent = 'Logs connected.\n'; wsl.send('ping'); };
+wsl.onmessage = (ev) => {
+  try {
+    const arr = JSON.parse(ev.data);
+    const lines = arr.map(x => `[${new Date(x.ts*1000).toISOString()}] ${x.level}: ${x.msg}`);
+    logEl.textContent = lines.join('\n');
+    logEl.scrollTop = logEl.scrollHeight;
+  } catch(e) {
+    logEl.textContent = ev.data;
+  }
+  wsl.send('ping');
+};
+</script>
+</body>
+</html>

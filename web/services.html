@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Services</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="/xtatech.png"/>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; }
+    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .page-header { display: flex; align-items: center; gap: 14px; }
+    .page-header img { width: 120px; max-width: 34vw; height: auto; }
+    .page-header h2 { margin: 0 0 4px; }
+    .small { font-size: 12px; color: #666; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .nav a { color: #164f8b; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .col { flex: 1; min-width: 320px; }
+    textarea { width: 100%; height: 500px; font-family: Consolas, Monaco, monospace; font-size: 13px; box-sizing: border-box; }
+    button { padding: 10px 14px; margin: 4px 6px 4px 0; cursor: pointer; border: 1px solid #cfcfcf; border-radius: 6px; background: #f6f6f6; }
+    button:hover { background: #ececec; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .danger { border-color: #ffa39e; background: #fff1f0; color: #8c1d18; }
+    .danger:hover { background: #ffe4e1; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; min-height: 120px; overflow: auto; border-radius: 8px; }
+    .status { color: #666; font-size: 13px; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
+    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
+    .ok { color: #0a7a2f; }
+    .bad { color: #b42318; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="page-header">
+    <img src="/xtatech.png" alt="Xtatech logo"/>
+    <div>
+      <h2>Services</h2>
+      <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/metrics">Metrics</a><a href="/terminal">Terminal</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <h3>Bridge Service</h3>
+      <div class="status-grid">
+        <div class="status-item"><div class="label">Bridge URL</div><div id="bridge_url" class="value">-</div></div>
+        <div class="status-item"><div class="label">MQTT</div><div id="mqtt_state" class="value">-</div></div>
+        <div class="status-item"><div class="label">Serial</div><div id="serial_state" class="value">-</div></div>
+        <div class="status-item"><div class="label">Uptime</div><div id="uptime" class="value">-</div></div>
+      </div>
+      <button data-action onclick="loadStatus()">Refresh Status</button>
+      <button data-action onclick="applyConfig()">Apply Config</button>
+      <button data-action onclick="restartService()">Restart Service</button>
+      <button data-action class="danger" onclick="rebootPi()">Reboot Raspberry Pi</button>
+      <pre id="service_status">Loading...</pre>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <h3>Config</h3>
+      <textarea id="cfg">Loading...</textarea>
+      <br/>
+      <button onclick="loadConfig()">Reload Config</button>
+      <button onclick="saveConfig()">Save Config</button>
+      <span id="cfg_status" class="status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const statusEl = document.getElementById('service_status');
+const cfgEl = document.getElementById('cfg');
+const cfgStatusEl = document.getElementById('cfg_status');
+
+function setCfgStatus(text) {
+  cfgStatusEl.textContent = text;
+}
+
+function setBusy(busy) {
+  document.querySelectorAll('[data-action]').forEach((button) => button.disabled = busy);
+}
+
+function fmtAge(seconds) {
+  if (seconds === null || seconds === undefined) return '-';
+  const s = Math.max(0, Number(seconds));
+  if (s < 60) return `${Math.floor(s)}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
+function renderSummary(j) {
+  const controller = j.controller || {};
+  const mqtt = j.mqtt || {};
+  const serial = j.serial || {};
+  const rt = j.runtime || {};
+  document.getElementById('bridge_url').textContent = controller.url || '-';
+  document.getElementById('mqtt_state').textContent = mqtt.connected ? `Connected to ${mqtt.host}:${mqtt.port}` : `Offline: ${mqtt.host || '-'}:${mqtt.port || '-'}`;
+  document.getElementById('mqtt_state').className = 'value ' + (mqtt.connected ? 'ok' : 'bad');
+  document.getElementById('serial_state').textContent = rt.active_serial_port ? `${rt.active_serial_port} @ ${serial.baud || '-'}` : (rt.last_serial_error || 'Not connected');
+  document.getElementById('serial_state').className = 'value ' + (rt.serial_ok ? 'ok' : 'bad');
+  document.getElementById('uptime').textContent = fmtAge(rt.uptime_s);
+}
+
+async function fetchText(url, options = {}) {
+  const r = await fetch(url, options);
+  const text = await r.text();
+  if (!r.ok) throw new Error(text || `${r.status} ${r.statusText}`);
+  return text;
+}
+
+async function fetchJson(url, options = {}) {
+  const r = await fetch(url, options);
+  const text = await r.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+  if (!r.ok) throw new Error(data.error || data.detail || data.raw || `${r.status} ${r.statusText}`);
+  return data;
+}
+
+async function loadStatus() {
+  setBusy(true);
+  try {
+    const j = await fetchJson('/api/status');
+    renderSummary(j);
+    statusEl.textContent = JSON.stringify(j, null, 2);
+  } catch (err) {
+    statusEl.textContent = 'Status failed: ' + err.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function loadConfig() {
+  setCfgStatus('Loading config...');
+  try {
+    cfgEl.value = await fetchText('/api/config');
+    setCfgStatus('Config loaded.');
+  } catch (err) {
+    setCfgStatus('Load failed: ' + err.message);
+  }
+}
+
+async function saveConfig() {
+  setCfgStatus('Saving config...');
+  try {
+    await fetchText('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      body: cfgEl.value
+    });
+    setCfgStatus('Config saved.');
+  } catch (err) {
+    setCfgStatus('Save failed: ' + err.message);
+  }
+}
+
+async function applyConfig() {
+  setBusy(true);
+  statusEl.textContent = 'Applying config...';
+  try {
+    const j = await fetchJson('/api/config/apply', { method: 'POST' });
+    statusEl.textContent = JSON.stringify(j, null, 2);
+    await loadStatus();
+  } catch (err) {
+    statusEl.textContent = 'Apply failed: ' + err.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function restartService() {
+  if (!confirm('Restart the LoRa Bridge service now?')) return;
+  setBusy(true);
+  statusEl.textContent = 'Restarting service...';
+  try {
+    const j = await fetchJson('/api/service/restart', { method: 'POST' });
+    statusEl.textContent = JSON.stringify(j, null, 2);
+  } catch (err) {
+    statusEl.textContent = 'Restart failed: ' + err.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function rebootPi() {
+  if (!confirm('Reboot the Raspberry Pi now? The web UI will disconnect while it restarts.')) return;
+  const typed = prompt('Type REBOOT to confirm.');
+  if (typed !== 'REBOOT') {
+    statusEl.textContent = 'Reboot cancelled.';
+    return;
+  }
+  setBusy(true);
+  statusEl.textContent = 'Rebooting Raspberry Pi...';
+  try {
+    const j = await fetchJson('/api/system/reboot', { method: 'POST' });
+    statusEl.textContent = JSON.stringify(j, null, 2) + '\n\nThe Raspberry Pi should go offline briefly.';
+  } catch (err) {
+    statusEl.textContent = 'Reboot failed: ' + err.message;
+  } finally {
+    setBusy(false);
+  }
+}
+
+loadStatus();
+loadConfig();
+</script>
+</body>
+</html>

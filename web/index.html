@@ -1,0 +1,356 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Xtatech LoRa Bridge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="/xtatech.png"/>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; color: #111; }
+    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .col { flex: 1; min-width: 320px; }
+    .page-header { display: flex; align-items: center; gap: 14px; }
+    .page-header img { width: 120px; max-width: 34vw; height: auto; }
+    .page-header h2 { margin: 0 0 4px; }
+    .small { font-size: 12px; color: #666; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .nav a { color: #164f8b; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
+    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .monitor { background: #111; color: #0f0; font-family: Consolas, Monaco, monospace; font-size: 12px; padding: 10px; height: 320px; overflow-y: auto; white-space: pre-wrap; border-radius: 8px; }
+    .payload-frame { height: 320px; overflow: auto; border-radius: 8px; border: 1px solid #1f1f1f; background: #111; }
+    .payload-frame table { color: #0f0; font-family: Consolas, Monaco, monospace; font-size: 12px; }
+    .payload-frame th, .payload-frame td { border-bottom: 1px solid #2c2c2c; font-size: 12px; }
+    .payload-frame th { position: sticky; top: 0; background: #111; z-index: 1; }
+    .payload-frame code { color: #0f0; }
+    .banner { display: none; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid #e5e5e5; background: #fafafa; }
+    .banner.warn { display: block; background: #fff7e6; border-color: #ffd591; color: #7a4b00; }
+    .banner.bad { display: block; background: #fff1f0; border-color: #ffa39e; color: #8c1d18; }
+    .badge { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: bold; border: 1px solid #d9d9d9; background: #fafafa; color: #444; }
+    .badge.ok { border-color: #b7eb8f; background: #f6ffed; color: #0a7a2f; }
+    .badge.bad { border-color: #ffa39e; background: #fff1f0; color: #b42318; }
+    .badge.warn { border-color: #ffd591; background: #fff7e6; color: #8a5a00; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; vertical-align: top; }
+    button { padding: 8px 12px; margin: 4px 0; box-sizing: border-box; cursor: pointer; }
+    .table-btn { width: auto; padding: 6px 10px; margin: 0; }
+    .ok { color: #0a7a2f; }
+    .bad { color: #b42318; }
+    .muted { color: #777; }
+    .empty { color: #777; text-align: center; padding: 18px; }
+    code { word-break: break-word; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="page-header">
+    <img src="/xtatech.png" alt="Xtatech logo"/>
+    <div>
+      <h2>Xtatech LoRa Bridge</h2>
+      <div id="summary">Loading...</div>
+      <div class="nav small"><a href="/diagnostics">Diagnostics</a><a href="/services">Services</a><a href="/metrics">Metrics</a><a href="/terminal">Terminal</a></div>
+    </div>
+  </div>
+</div>
+<div id="alert_banner" class="banner"></div>
+
+<div class="card">
+  <h3>Bridge Status</h3>
+  <div class="status-grid">
+    <div class="status-item"><div class="label">Bridge Web</div><div id="bridge_web" class="value">-</div></div>
+    <div class="status-item"><div class="label">MQTT</div><div id="mqtt_status" class="value">-</div></div>
+    <div class="status-item"><div class="label">Gateway ID</div><div id="gateway_id" class="value">-</div></div>
+    <div class="status-item"><div class="label">Configured Serial</div><div id="configured_serial" class="value">-</div></div>
+    <div class="status-item"><div class="label">Active LoRa Port</div><div id="active_serial" class="value">-</div></div>
+    <div class="status-item"><div class="label">Serial OK</div><div id="serial_ok" class="value">-</div></div>
+    <div class="status-item"><div class="label">Last Serial Packet</div><div id="last_serial" class="value">-</div></div>
+    <div class="status-item"><div class="label">Raw Serial Lines</div><div id="serial_lines" class="value">-</div></div>
+    <div class="status-item"><div class="label">Parse Drops</div><div id="parse_drops" class="value">-</div></div>
+    <div class="status-item"><div class="label">Nodes Seen</div><div id="nodes_seen" class="value">-</div></div>
+    <div class="status-item"><div class="label">Uptime</div><div id="uptime" class="value">-</div></div>
+    <div class="status-item"><div class="label">WebSocket Feed</div><div id="ws_status" class="value">-</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Nodes Seen</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Node</th><th>Last Live Beacon</th><th>Age</th><th>Action</th></tr></thead>
+      <tbody id="node_rows"><tr><td class="empty" colspan="4">No nodes seen yet.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <div class="card-header"><h3>Latest Payloads</h3><button class="table-btn" onclick="clearPayloads()">Clear</button></div>
+      <div class="payload-frame">
+        <table>
+          <thead><tr><th>Time</th><th>Node</th><th>Payload</th></tr></thead>
+          <tbody id="payload_rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-header"><h3>Live Serial Monitor</h3><button class="table-btn" onclick="clearMonitor()">Clear</button></div>
+      <div id="serial_monitor" class="monitor"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let wsPayload = null;
+let wsLogs = null;
+const payloadBuffer = [];
+const MAX_PAYLOADS = 50;
+let lastStatus = null;
+const tzOpts = { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+
+function fmtTs(ts) {
+  if (ts === null || ts === undefined || ts === 0) return '-';
+  const d = new Date(Number(ts) * 1000);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleString('en-ZA', tzOpts);
+}
+
+function fmtAge(seconds) {
+  if (seconds === null || seconds === undefined) return '-';
+  const s = Math.max(0, Number(seconds));
+  if (s < 60) return `${Math.floor(s)}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
+function setBool(id, value) {
+  const el = document.getElementById(id);
+  el.textContent = value ? 'YES' : 'NO';
+  el.className = 'value ' + (value ? 'ok' : 'bad');
+}
+
+function setBadge(id, text, state) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<span class="badge ${state || ''}">${text}</span>`;
+}
+
+function showBanner(message, state) {
+  const el = document.getElementById('alert_banner');
+  if (!message) {
+    el.className = 'banner';
+    el.textContent = '';
+    return;
+  }
+  el.className = `banner ${state || 'warn'}`;
+  el.textContent = message;
+}
+
+function renderStatus(j) {
+  lastStatus = j;
+  const controller = j.controller || {};
+  const mqtt = j.mqtt || {};
+  const serial = j.serial || {};
+  const rt = j.runtime || {};
+  const serialAge = rt.last_serial_rx_ts ? Math.floor(Date.now() / 1000 - Number(rt.last_serial_rx_ts)) : null;
+  document.getElementById('summary').innerHTML =
+    'Gateway: <b>' + (mqtt.gateway_id || '-') + '</b> | Bridge: ' +
+    (controller.ip || '-') + ':' + (controller.ui_port || '-') + ' | ' +
+    `<span class="badge ${mqtt.connected ? 'ok' : 'bad'}">MQTT ${mqtt.connected ? 'connected' : 'offline'}</span>`;
+  document.getElementById('bridge_web').textContent = controller.hostname && controller.url ? `${controller.hostname} / ${controller.url}` : (controller.url || '-');
+  document.getElementById('mqtt_status').textContent = mqtt.connected ? `connected to ${mqtt.host}:${mqtt.port}` : `disconnected from ${mqtt.host || '-'}:${mqtt.port || '-'}`;
+  document.getElementById('mqtt_status').className = 'value ' + (mqtt.connected ? 'ok' : 'bad');
+  document.getElementById('gateway_id').textContent = mqtt.gateway_id || '-';
+  document.getElementById('configured_serial').textContent = `${serial.port || '-'} @ ${serial.baud || '-'}`
+  document.getElementById('active_serial').textContent = rt.active_serial_port ? `${rt.active_serial_port} @ ${serial.baud || '-'}` : '-';
+  setBool('serial_ok', !!rt.serial_ok);
+  document.getElementById('last_serial').textContent = rt.last_serial_rx_iso ? `${rt.last_serial_rx_iso} (${fmtAge(serialAge)} ago)` : '-';
+  document.getElementById('serial_lines').textContent = rt.serial_lines_seen ?? 0;
+  document.getElementById('parse_drops').textContent = rt.serial_parse_drops ?? 0;
+  document.getElementById('nodes_seen').textContent = rt.nodes_seen ?? 0;
+  document.getElementById('uptime').textContent = fmtAge(rt.uptime_s);
+  renderNodeRows(buildNodeRows(rt.nodes_seen_detail || []));
+  if (rt.last_serial_error) {
+    showBanner(`Serial warning: ${rt.last_serial_error}`, 'warn');
+  } else if ((rt.serial_lines_seen || 0) > 0 && (rt.serial_packets_parsed || 0) === 0) {
+    showBanner('Raw serial lines are arriving, but none are parsing as packets. Check parsing.mode or the LoRa output format.', 'warn');
+  } else if (!mqtt.connected) {
+    showBanner(`MQTT is disconnected from ${mqtt.host || '-'}:${mqtt.port || '-'}. Payloads will not publish until it reconnects.`, 'bad');
+  } else {
+    showBanner('', '');
+  }
+}
+
+function buildNodeRows(nodes) {
+  if (nodes.length) return nodes;
+
+  const byNode = new Map();
+  for (const pkt of payloadBuffer) {
+    const nodeId = pkt.node_id || (pkt.payload && (pkt.payload.ID || pkt.payload.id || pkt.payload.node)) || '';
+    if (!nodeId || nodeId === '-') continue;
+    const prev = byNode.get(nodeId);
+    if (!prev || Number(pkt.ts || 0) > Number(prev.last_seen_ts || 0)) {
+      byNode.set(nodeId, {
+        node_id: nodeId,
+        last_seen_ts: pkt.ts || 0,
+        age_s: pkt.ts ? Math.floor(Date.now() / 1000 - Number(pkt.ts)) : null
+      });
+    }
+  }
+  return [...byNode.values()].sort((a, b) => Number(b.last_seen_ts || 0) - Number(a.last_seen_ts || 0));
+}
+
+function renderNodeRows(nodes) {
+  const body = document.getElementById('node_rows');
+  body.innerHTML = '';
+  if (!nodes.length) {
+    body.innerHTML = '<tr><td class="empty" colspan="4">No nodes seen yet.</td></tr>';
+    return;
+  }
+
+  for (const node of nodes) {
+    const tr = document.createElement('tr');
+    const nodeId = node.node_id || '-';
+    const nodeCell = document.createElement('td');
+    const lastSeenCell = document.createElement('td');
+    const ageCell = document.createElement('td');
+    const actionCell = document.createElement('td');
+    const removeButton = document.createElement('button');
+
+    nodeCell.textContent = nodeId;
+    lastSeenCell.textContent = fmtTs(node.last_seen_ts);
+    ageCell.textContent = node.age_s === null || node.age_s === undefined ? '-' : `${fmtAge(node.age_s)} ago`;
+    removeButton.type = 'button';
+    removeButton.className = 'table-btn';
+    removeButton.textContent = 'Remove';
+    removeButton.addEventListener('click', () => removeNode(nodeId));
+    actionCell.appendChild(removeButton);
+
+    tr.appendChild(nodeCell);
+    tr.appendChild(lastSeenCell);
+    tr.appendChild(ageCell);
+    tr.appendChild(actionCell);
+    body.appendChild(tr);
+  }
+}
+
+async function removeNode(nodeId) {
+  if (!confirm(`Remove ${nodeId} from nodes seen?`)) return;
+  try {
+    const r = await fetch(`/api/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    payloadBuffer.splice(0, payloadBuffer.length, ...payloadBuffer.filter((pkt) => pkt.node_id !== nodeId));
+    await refreshStatus();
+  } catch (err) {
+    showBanner(`Remove node failed: ${err.message}`, 'bad');
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function renderPayloadRows() {
+  const body = document.getElementById('payload_rows');
+  body.innerHTML = '';
+  if (payloadBuffer.length === 0) {
+    body.innerHTML = '<tr><td class="empty" colspan="3">No payloads received yet.</td></tr>';
+    return;
+  }
+  for (const pkt of payloadBuffer.slice(0, MAX_PAYLOADS)) {
+    const tr = document.createElement('tr');
+    const payload = typeof pkt.payload === 'object' ? JSON.stringify(pkt.payload) : String(pkt.payload || pkt.raw || '');
+    tr.innerHTML = `<td>${fmtTs(pkt.ts)}</td><td>${escapeHtml(pkt.node_id || '-')}</td><td><code>${escapeHtml(payload)}</code></td>`;
+    body.appendChild(tr);
+  }
+}
+
+function clearPayloads() {
+  payloadBuffer.length = 0;
+  renderPayloadRows();
+}
+
+function clearMonitor() {
+  document.getElementById('serial_monitor').textContent = '';
+}
+
+function appendMonitorLine(text) {
+  const m = document.getElementById('serial_monitor');
+  m.textContent += text + '\n';
+  const lines = m.textContent.split('\n');
+  if (lines.length > 300) m.textContent = lines.slice(lines.length - 300).join('\n');
+  m.scrollTop = m.scrollHeight;
+}
+
+async function refreshStatus() {
+  try {
+    const r = await fetch('/api/status');
+    renderStatus(await r.json());
+  } catch (err) {
+    showBanner(`Status refresh failed: ${err.message}`, 'bad');
+  }
+}
+
+function connectPayloads() {
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  wsPayload = new WebSocket(`${proto}://${window.location.host}/ws`);
+  wsPayload.onopen = () => {
+    setBadge('ws_status', 'connected', 'ok');
+    wsPayload.send('ping');
+  };
+  wsPayload.onmessage = (event) => {
+    try {
+      const items = JSON.parse(event.data);
+      const latest = Array.isArray(items) ? items.slice().reverse() : [items];
+      payloadBuffer.length = 0;
+      payloadBuffer.push(...latest);
+      payloadBuffer.length = Math.min(payloadBuffer.length, MAX_PAYLOADS);
+      renderPayloadRows();
+      if (lastStatus) renderNodeRows(buildNodeRows(lastStatus.runtime?.nodes_seen_detail || []));
+    } catch {
+      payloadBuffer.unshift({ ts: Date.now() / 1000, node_id: '-', raw: event.data });
+      renderPayloadRows();
+    }
+    wsPayload.send('ping');
+  };
+  wsPayload.onclose = () => {
+    setBadge('ws_status', 'reconnecting', 'warn');
+    setTimeout(connectPayloads, 2000);
+  };
+  wsPayload.onerror = () => wsPayload.close();
+}
+
+function connectLogs() {
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  wsLogs = new WebSocket(`${proto}://${window.location.host}/ws/logs`);
+  wsLogs.onopen = () => appendMonitorLine('[ws/logs connected]');
+  wsLogs.onmessage = (event) => {
+    try {
+      const items = JSON.parse(event.data);
+      const m = document.getElementById('serial_monitor');
+      m.textContent = '';
+      for (const item of items) appendMonitorLine(`[${fmtTs(item.ts)}] ${item.level || 'INFO'}: ${item.msg || ''}`);
+    } catch {
+      appendMonitorLine(event.data);
+    }
+    wsLogs.send('ping');
+  };
+  wsLogs.onclose = () => setTimeout(connectLogs, 2000);
+  wsLogs.onerror = () => wsLogs.close();
+}
+
+setInterval(refreshStatus, 5000);
+renderPayloadRows();
+setBadge('ws_status', 'connecting', 'warn');
+refreshStatus();
+connectPayloads();
+connectLogs();
+</script>
+</body>
+</html>

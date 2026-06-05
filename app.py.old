@@ -1,0 +1,707 @@
+import asyncio
+import json
+import re
+import socket
+import subprocess
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Optional, List
+
+import serial
+import yaml
+import paho.mqtt.client as mqtt
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
+
+BASE_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = BASE_DIR / "config.yaml"
+WEB_DIR = BASE_DIR / "web"
+
+_RSSI_RE = re.compile(r"rssi[:=]\s*(-?\d+)", re.IGNORECASE)
+
+BOOT_TS = time.time()
+
+def now_ts() -> float:
+    return time.time()
+
+def now_iso_utc() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+def load_config() -> Dict[str, Any]:
+    if not CONFIG_PATH.exists():
+        raise FileNotFoundError(f"Missing config.yaml at {CONFIG_PATH}")
+    with CONFIG_PATH.open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+def try_extract_json_from_line(line: str) -> Optional[Dict[str, Any]]:
+    line = line.strip()
+    if not line:
+        return None
+    if line.startswith("{") and line.endswith("}"):
+        try:
+            obj = json.loads(line)
+            return obj if isinstance(obj, dict) else None
+        except Exception:
+            return None
+    s = line.find("{")
+    e = line.rfind("}")
+    if s != -1 and e != -1 and e > s:
+        candidate = line[s:e + 1]
+        try:
+            obj = json.loads(candidate)
+            return obj if isinstance(obj, dict) else None
+        except Exception:
+            return None
+    return None
+
+def extract_rssi(text_line: str) -> Optional[int]:
+    m = _RSSI_RE.search(text_line)
+    if not m:
+        return None
+    try:
+        return int(m.group(1))
+    except ValueError:
+        return None
+
+def derive_node_id(payload: Dict[str, Any], id_keys: List[str]) -> str:
+    lowered = {str(k).lower(): k for k in payload.keys()}
+    for wanted in id_keys:
+        key = lowered.get(str(wanted).lower())
+        if key is not None and payload.get(key) is not None:
+            return str(payload[key])
+    return "unknown"
+
+
+@dataclass
+class Packet:
+    ts: float
+    node_id: str
+    payload: Dict[str, Any]
+    raw_line: str
+
+
+@dataclass
+class LogLine:
+    ts: float
+    level: str
+    msg: str
+
+
+class PacketStore:
+    def __init__(self, maxlen: int = 300):
+        self.maxlen = maxlen
+        self._buf: List[Packet] = []
+        self._lock = asyncio.Lock()
+
+    async def add(self, pkt: Packet) -> None:
+        async with self._lock:
+            self._buf.append(pkt)
+            if len(self._buf) > self.maxlen:
+                self._buf = self._buf[-self.maxlen:]
+
+    async def latest(self, n: int = 30) -> List[Dict[str, Any]]:
+        async with self._lock:
+            data = self._buf[-n:]
+            return [{"ts": p.ts, "node_id": p.node_id, "payload": p.payload, "raw": p.raw_line} for p in data]
+
+
+class LogStore:
+    def __init__(self, maxlen: int = 800):
+        self.maxlen = maxlen
+        self._buf: List[LogLine] = []
+        self._lock = asyncio.Lock()
+
+    async def add(self, level: str, msg: str) -> None:
+        async with self._lock:
+            self._buf.append(LogLine(ts=now_ts(), level=level, msg=msg))
+            if len(self._buf) > self.maxlen:
+                self._buf = self._buf[-self.maxlen:]
+
+    async def latest(self, n: int = 120) -> List[Dict[str, Any]]:
+        async with self._lock:
+            data = self._buf[-n:]
+            return [{"ts": l.ts, "level": l.level, "msg": l.msg} for l in data]
+
+
+class RuntimeStats:
+    """Shared runtime stats for UI/heartbeat/watchdog."""
+    def __init__(self):
+        self.last_serial_rx_ts: float = 0.0
+        self.last_serial_rx_iso: str = ""
+        self.last_serial_port_ok: bool = False
+        self.last_serial_error: str = ""
+        self.nodes_seen: Dict[str, float] = {}  # node_id -> last ts
+
+    def mark_serial_rx(self, node_id: str):
+        t = now_ts()
+        self.last_serial_rx_ts = t
+        self.last_serial_rx_iso = now_iso_utc()
+        self.last_serial_port_ok = True
+        self.last_serial_error = ""
+        if node_id:
+            self.nodes_seen[node_id] = t
+
+    def mark_serial_error(self, err: str, port_ok: bool):
+        self.last_serial_port_ok = port_ok
+        self.last_serial_error = err
+
+
+class DiscoveryPublisher:
+    def __init__(self, cfg: Dict[str, Any], client: mqtt.Client, logs: LogStore):
+        self.cfg = cfg
+        self.client = client
+        self.logs = logs
+        disc = cfg.get("mqtt", {}).get("discovery", {}) or {}
+        self.enabled = bool(disc.get("enabled", False))
+        self.prefix = str(disc.get("prefix", "homeassistant")).strip()
+        self.expire_after = int(disc.get("expire_after_s", 0) or 0)
+        self.republish_interval = int(disc.get("republish_interval_s", 0) or 0)
+        self._last: Dict[str, float] = {}
+        self._gw_last: float = 0.0
+
+    def _topic(self, component: str, object_id: str) -> str:
+        return f"{self.prefix}/{component}/{object_id}/config"
+
+    def _log(self, level: str, msg: str) -> None:
+        try:
+            asyncio.get_running_loop().create_task(self.logs.add(level, msg))
+        except RuntimeError:
+            pass
+
+    def maybe_publish_gateway(self, gateway_id: str, state_topic: str):
+        if not self.enabled:
+            return
+        now = time.time()
+        if self._gw_last and self.republish_interval > 0 and (now - self._gw_last) < self.republish_interval:
+            return
+
+        device = {
+            "identifiers": [f"lora_gateway_{gateway_id}"],
+            "name": f"LoRa Gateway {gateway_id}",
+            "manufacturer": "Xtatech",
+            "model": "Raspberry Pi Gateway",
+        }
+
+        sensors = [
+            ("heartbeat", "Heartbeat", None, "timestamp", None, "heartbeat_iso"),
+            ("uptime", "Uptime", "s", None, "measurement", "uptime_s"),
+            ("nodes_seen", "Nodes Seen", None, None, "measurement", "nodes_seen"),
+        ]
+
+        for key, suffix, unit, devcls, stcls, json_key in sensors:
+            object_id = f"{gateway_id.lower()}_{key}"
+            payload = {
+                "name": f"{gateway_id} {suffix}",
+                "unique_id": f"lora_gateway_{gateway_id.lower()}_{key}",
+                "state_topic": state_topic,
+                "value_template": f"{{{{ value_json.{json_key} | default(None) }}}}",
+                "device": device,
+            }
+            if stcls:
+                payload["state_class"] = stcls
+            if devcls:
+                payload["device_class"] = devcls
+            if unit:
+                payload["unit_of_measurement"] = unit
+            if self.expire_after > 0:
+                payload["expire_after"] = self.expire_after
+
+            self.client.publish(self._topic("sensor", object_id),
+                                json.dumps(payload, separators=(",", ":")),
+                                qos=0, retain=True)
+
+        # Binary sensors: mqtt_connected and serial_ok
+        bin_sensors = [
+            ("mqtt_connected", "MQTT Connected", "mqtt_connected"),
+            ("serial_ok", "Serial OK", "serial_ok"),
+        ]
+        for key, name, json_key in bin_sensors:
+            object_id = f"{gateway_id.lower()}_{key}"
+            payload = {
+                "name": f"{gateway_id} {name}",
+                "unique_id": f"lora_gateway_{gateway_id.lower()}_{key}",
+                "state_topic": state_topic,
+                "value_template": f"{{{{ 'ON' if value_json.{json_key} else 'OFF' }}}}",
+                "device": device,
+            }
+            self.client.publish(self._topic("binary_sensor", object_id),
+                                json.dumps(payload, separators=(",", ":")),
+                                qos=0, retain=True)
+
+        self._gw_last = now
+        self._log("INFO", f"MQTT discovery published for gateway: {gateway_id}")
+
+    def maybe_publish_node(self, node_id: str, state_topic: str):
+        if not self.enabled:
+            return
+
+        now = time.time()
+        last = self._last.get(node_id, 0.0)
+        if last and self.republish_interval > 0 and (now - last) < self.republish_interval:
+            return
+
+        device = {
+            "identifiers": [f"lora_{node_id}"],
+            "name": f"LoRa {node_id}",
+            "manufacturer": "Xtatech",
+            "model": "LoRa Sensor Node",
+        }
+
+        sensors = [
+            ("bat",  "Battery",     "V",   "voltage",         "measurement",      "bat"),
+            ("temp", "Temperature", "°C",  "temperature",     "measurement",      "temp"),
+            ("humi", "Humidity",    "%",   "humidity",        "measurement",      "humi"),
+            ("ph",   "pH",          "pH",  None,              "measurement",      "PH"),
+            ("sleep","Sleep",       "s",   None,              "measurement",      "SLEEP"),
+            ("count","Count",       None,  None,              "total_increasing", "COUNT"),
+            ("rssi", "RSSI",        "dBm", "signal_strength", "measurement",      "rssi"),
+            # Last-seen sensor (timestamp)
+            ("last_seen", "Last Seen", None, "timestamp", None, "ts_iso"),
+        ]
+
+        for key, suffix, unit, devcls, stcls, json_key in sensors:
+            object_id = f"{node_id.lower()}_{key}"
+            payload = {
+                "name": f"{node_id} {suffix}",
+                "unique_id": f"lora_{node_id.lower()}_{key}",
+                "state_topic": state_topic,
+                "value_template": f"{{{{ value_json.{json_key} | default(None) }}}}",
+                "device": device,
+            }
+            if stcls:
+                payload["state_class"] = stcls
+            if devcls:
+                payload["device_class"] = devcls
+            if unit:
+                payload["unit_of_measurement"] = unit
+            if self.expire_after > 0:
+                payload["expire_after"] = self.expire_after
+
+            self.client.publish(self._topic("sensor", object_id),
+                                json.dumps(payload, separators=(",", ":")),
+                                qos=0, retain=True)
+
+        self._last[node_id] = now
+        self._log("INFO", f"MQTT discovery published for node: {node_id}")
+
+
+class MqttPublisher:
+    def __init__(self, cfg: Dict[str, Any], logs: LogStore):
+        self.cfg = cfg
+        self.logs = logs
+        self._connected = False
+
+        self.client = mqtt.Client(
+            client_id=cfg["mqtt"]["client_id"],
+            protocol=mqtt.MQTTv311,
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+        )
+
+        user = cfg["mqtt"].get("username")
+        pw = cfg["mqtt"].get("password")
+        if user:
+            self.client.username_pw_set(user, pw)
+
+        self.client.on_connect = self._on_connect
+        self.client.on_disconnect = self._on_disconnect
+        self.client.reconnect_delay_set(min_delay=1, max_delay=30)
+
+        self.discovery = DiscoveryPublisher(cfg, self.client, logs)
+
+    def _log(self, level: str, msg: str) -> None:
+        try:
+            asyncio.get_running_loop().create_task(self.logs.add(level, msg))
+        except RuntimeError:
+            pass
+
+    def _on_connect(self, client, userdata, flags, reason_code, properties=None):
+        self._connected = (reason_code == 0)
+        self._log("INFO" if self._connected else "WARN",
+                  f"MQTT connect result: {reason_code}")
+
+    def _on_disconnect(self, client, userdata, reason_code, properties=None):
+        self._connected = False
+        self._log("WARN", f"MQTT disconnected: {reason_code}")
+
+    def connect(self) -> None:
+        host = self.cfg["mqtt"]["host"]
+        port = int(self.cfg["mqtt"]["port"])
+        self.client.connect_async(host, port, keepalive=60)
+        self.client.loop_start()
+
+    def stop(self) -> None:
+        try:
+            self.client.loop_stop()
+        except Exception:
+            pass
+
+    def connected(self) -> bool:
+        return self._connected
+
+    def publish_state(self, topic: str, payload: Dict[str, Any], retain: Optional[bool] = None) -> None:
+        if not self._connected:
+            return
+        qos = int(self.cfg["mqtt"].get("qos", 0))
+        retain_final = bool(self.cfg["mqtt"].get("retain", False)) if retain is None else bool(retain)
+        self.client.publish(topic, json.dumps(payload, separators=(",", ":")), qos=qos, retain=retain_final)
+
+    def status(self) -> Dict[str, Any]:
+        return {
+            "connected": self._connected,
+            "host": self.cfg["mqtt"]["host"],
+            "port": int(self.cfg["mqtt"]["port"]),
+            "base_topic": self.cfg["mqtt"]["base_topic"],
+            "gateway_id": self.cfg["mqtt"].get("gateway_id", ""),
+        }
+
+
+class SerialBridge:
+    def __init__(self, cfg: Dict[str, Any], store: PacketStore, mqtt_pub: MqttPublisher, logs: LogStore, stats: RuntimeStats):
+        self.cfg = cfg
+        self.store = store
+        self.mqtt = mqtt_pub
+        self.logs = logs
+        self.stats = stats
+        self._stop = asyncio.Event()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    async def run_forever(self) -> None:
+        delay = float(self.cfg["serial"].get("reconnect_delay_s", 2.0))
+        await self.logs.add("INFO", f"Serial starting: {self.cfg['serial']['port']} @ {self.cfg['serial']['baud']}")
+        while not self._stop.is_set():
+            try:
+                await self._run_once()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                port = self.cfg["serial"]["port"]
+                port_ok = Path(port).exists() if port.startswith("/dev/") else True
+                self.stats.mark_serial_error(repr(e), port_ok)
+                await self.logs.add("WARN", f"Serial error: {e!r} (retry in {delay}s)")
+                await asyncio.sleep(delay)
+
+    async def _run_once(self) -> None:
+        port = self.cfg["serial"]["port"]
+        baud = int(self.cfg["serial"]["baud"])
+        timeout_s = float(self.cfg["serial"].get("timeout_s", 1.0))
+        max_len = int(self.cfg.get("parsing", {}).get("max_line_length", 4096))
+        mode = (self.cfg.get("parsing", {}).get("mode", "json") or "json").lower()
+        id_keys = self.cfg.get("topics", {}).get("id_keys", ["ID"])
+
+        def _open_serial():
+            return serial.Serial(
+                port=port,
+                baudrate=baud,
+                bytesize=serial.EIGHTBITS,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                timeout=timeout_s,
+                xonxoff=False,
+                rtscts=False,
+                dsrdtr=False,
+            )
+
+        ser = await asyncio.to_thread(_open_serial)
+        await self.logs.add("INFO", f"Serial opened: {port} @ {baud} (8N1, no flow control)")
+        self.stats.last_serial_port_ok = True
+
+        base_topic = self.cfg["mqtt"]["base_topic"].rstrip("/")
+
+        try:
+            while not self._stop.is_set():
+                raw = await asyncio.to_thread(ser.readline)
+                if not raw:
+                    continue
+
+                line = raw.decode("utf-8", errors="ignore")
+                if len(line) > max_len:
+                    line = line[:max_len]
+                line = line.strip()
+                if not line:
+                    continue
+
+                await self.logs.add("SERIAL", line)
+
+                if mode == "raw":
+                    payload = {"raw": line}
+                    node_id = "raw"
+                else:
+                    obj = try_extract_json_from_line(line)
+                    if obj is None:
+                        continue
+                    payload = obj
+                    node_id = derive_node_id(payload, id_keys)
+
+                # Gateway timestamps for HA history + last-seen
+                payload.setdefault("ts", now_ts())
+                payload.setdefault("ts_iso", now_iso_utc())
+
+                # RSSI (from serial line) if not already in JSON
+                if "rssi" not in payload:
+                    rssi = extract_rssi(line)
+                    if rssi is not None:
+                        payload["rssi"] = rssi
+
+                # record runtime stats
+                self.stats.mark_serial_rx(node_id)
+
+                # Publish discovery + state (topic uses payload ID/node_id)
+                node_state_topic = f"{base_topic}/{node_id}/state"
+                self.mqtt.discovery.maybe_publish_node(node_id, node_state_topic)
+
+                self.mqtt.publish_state(node_state_topic, payload)
+                self.mqtt._log("INFO", f"MQTT published: {node_state_topic}")
+
+                pkt = Packet(ts=float(payload["ts"]), node_id=node_id, payload=payload, raw_line=line)
+                await self.store.add(pkt)
+
+        finally:
+            await asyncio.to_thread(ser.close)
+            await self.logs.add("WARN", f"Serial closed: {port}")
+
+
+# Websocket clients
+ws_payload_clients: List[WebSocket] = []
+ws_log_clients: List[WebSocket] = []
+ws_payload_lock = asyncio.Lock()
+ws_log_lock = asyncio.Lock()
+
+async def ws_payload_broadcaster(store: PacketStore, stop_event: asyncio.Event):
+    while not stop_event.is_set():
+        await asyncio.sleep(0.75)
+        msg = json.dumps(await store.latest(30), separators=(",", ":"))
+        async with ws_payload_lock:
+            dead = []
+            for ws in ws_payload_clients:
+                try:
+                    await ws.send_text(msg)
+                except Exception:
+                    dead.append(ws)
+            for ws in dead:
+                if ws in ws_payload_clients:
+                    ws_payload_clients.remove(ws)
+
+async def ws_log_broadcaster(logs: LogStore, stop_event: asyncio.Event):
+    while not stop_event.is_set():
+        await asyncio.sleep(0.75)
+        msg = json.dumps(await logs.latest(120), separators=(",", ":"))
+        async with ws_log_lock:
+            dead = []
+            for ws in ws_log_clients:
+                try:
+                    await ws.send_text(msg)
+                except Exception:
+                    dead.append(ws)
+            for ws in dead:
+                if ws in ws_log_clients:
+                    ws_log_clients.remove(ws)
+
+
+def get_ip() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return ""
+
+async def heartbeat_task(cfg: Dict[str, Any], mqtt_pub: MqttPublisher, logs: LogStore, stats: RuntimeStats, stop_event: asyncio.Event):
+    hb = cfg.get("heartbeat", {}) or {}
+    wd = cfg.get("watchdog", {}) or {}
+    enabled = bool(hb.get("enabled", True))
+    interval_s = int(hb.get("interval_s", 30))
+    hb_base = str(hb.get("topic", f"{cfg['mqtt']['base_topic'].rstrip('/')}/_gateway")).rstrip("/")
+
+    gw_id = str(cfg["mqtt"].get("gateway_id") or socket.gethostname())
+    state_topic = f"{hb_base}/{gw_id}/state"
+
+    # Ensure discovery for gateway exists
+    while not stop_event.is_set():
+        if mqtt_pub.connected():
+            mqtt_pub.discovery.maybe_publish_gateway(gw_id, state_topic)
+            break
+        await asyncio.sleep(1)
+
+    await logs.add("INFO", f"Heartbeat task started: every {interval_s}s -> {state_topic}")
+
+    while not stop_event.is_set():
+        if enabled and mqtt_pub.connected():
+            uptime = int(now_ts() - BOOT_TS)
+            nodes_seen = len(stats.nodes_seen)
+            payload = {
+                "gateway_id": gw_id,
+                "heartbeat_ts": now_ts(),
+                "heartbeat_iso": now_iso_utc(),
+                "uptime_s": uptime,
+                "ip": get_ip(),
+                "mqtt_connected": mqtt_pub.connected(),
+                "serial_ok": bool(stats.last_serial_port_ok),
+                "last_serial_rx_ts": stats.last_serial_rx_ts or None,
+                "last_serial_rx_iso": stats.last_serial_rx_iso or None,
+                "nodes_seen": nodes_seen,
+                "last_serial_error": stats.last_serial_error or "",
+            }
+            mqtt_pub.publish_state(state_topic, payload, retain=False)
+
+        # Watchdog: reboot on serial loss
+        if bool(wd.get("enabled", False)) and bool(wd.get("reboot", False)):
+            no_data_s = int(wd.get("no_serial_data_s", 900))
+            require_port_missing = bool(wd.get("require_port_missing", False))
+            last_rx = stats.last_serial_rx_ts
+            port = str(cfg.get("serial", {}).get("port", ""))
+
+            if last_rx > 0 and (now_ts() - last_rx) > no_data_s:
+                port_missing = (port.startswith("/dev/") and not Path(port).exists())
+                if (not require_port_missing) or port_missing:
+                    await logs.add("ERROR", f"WATCHDOG: no serial data for {int(now_ts()-last_rx)}s. Rebooting...")
+                    # This uses sudo (configured by install.sh) to reboot without password
+                    try:
+                        subprocess.run(["/usr/bin/sudo", "/usr/bin/systemctl", "reboot"], check=False)
+                    except Exception as e:
+                        await logs.add("ERROR", f"WATCHDOG reboot failed: {e!r}")
+
+        await asyncio.sleep(interval_s)
+
+
+runtime: Dict[str, Any] = {"cfg": None, "stop_event": None, "mqtt": None, "serial": None, "tasks": []}
+store = PacketStore()
+logs = LogStore()
+stats = RuntimeStats()
+
+def auth_ok(request: Request) -> bool:
+    cfg = runtime.get("cfg") or {}
+    web = cfg.get("web", {}) or {}
+    if not web.get("require_token", False):
+        return True
+    token = str(web.get("token", ""))
+    return request.query_params.get("token") == token
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cfg = load_config()
+    store.maxlen = int(cfg.get("storage", {}).get("ring_buffer_size", 300))
+    logs.maxlen = int(cfg.get("storage", {}).get("log_buffer_size", 800))
+
+    runtime["cfg"] = cfg
+    runtime["stop_event"] = asyncio.Event()
+    runtime["tasks"] = []
+
+    await logs.add("INFO", "Bridge starting up")
+
+    mqtt_pub = MqttPublisher(cfg, logs)
+    mqtt_pub.connect()
+    runtime["mqtt"] = mqtt_pub
+
+    serial_bridge = SerialBridge(cfg, store, mqtt_pub, logs, stats)
+    runtime["serial"] = serial_bridge
+
+    runtime["tasks"].append(asyncio.create_task(serial_bridge.run_forever()))
+    runtime["tasks"].append(asyncio.create_task(ws_payload_broadcaster(store, runtime["stop_event"])))
+    runtime["tasks"].append(asyncio.create_task(ws_log_broadcaster(logs, runtime["stop_event"])))
+    runtime["tasks"].append(asyncio.create_task(heartbeat_task(cfg, mqtt_pub, logs, stats, runtime["stop_event"])))
+
+    try:
+        yield
+    finally:
+        await logs.add("WARN", "Bridge shutting down")
+        runtime["stop_event"].set()
+        if runtime.get("serial"):
+            runtime["serial"].stop()
+        for t in runtime.get("tasks", []):
+            try:
+                t.cancel()
+            except Exception:
+                pass
+        if runtime.get("mqtt"):
+            runtime["mqtt"].stop()
+
+app = FastAPI(lifespan=lifespan)
+
+if WEB_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    if not auth_ok(request):
+        return HTMLResponse("Unauthorized", status_code=401)
+    index = WEB_DIR / "index.html"
+    if not index.exists():
+        return HTMLResponse("Missing web/index.html", status_code=500)
+    return index.read_text(encoding="utf-8")
+
+@app.get("/api/status")
+async def api_status(request: Request):
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    cfg = runtime.get("cfg") or {}
+    return {
+        "mqtt": runtime["mqtt"].status() if runtime.get("mqtt") else {},
+        "serial": cfg.get("serial", {}),
+        "parsing": cfg.get("parsing", {}),
+        "topics": cfg.get("topics", {}),
+        "web": cfg.get("web", {}),
+        "runtime": {
+            "last_serial_rx_ts": stats.last_serial_rx_ts,
+            "last_serial_rx_iso": stats.last_serial_rx_iso,
+            "serial_ok": stats.last_serial_port_ok,
+            "nodes_seen": len(stats.nodes_seen),
+            "last_serial_error": stats.last_serial_error,
+        }
+    }
+
+@app.get("/api/latest")
+async def api_latest(request: Request):
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    return await store.latest(300)
+
+@app.get("/api/logs")
+async def api_logs(request: Request, tail: int = 200):
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    tail = max(10, min(int(tail), 800))
+    return await logs.latest(tail)
+
+@app.websocket("/ws")
+async def ws_payload(ws: WebSocket):
+    await ws.accept()
+    async with ws_payload_lock:
+        ws_payload_clients.append(ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        async with ws_payload_lock:
+            if ws in ws_payload_clients:
+                ws_payload_clients.remove(ws)
+
+@app.websocket("/ws/logs")
+async def ws_logs(ws: WebSocket):
+    await ws.accept()
+    async with ws_log_lock:
+        ws_log_clients.append(ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        async with ws_log_lock:
+            if ws in ws_log_clients:
+                ws_log_clients.remove(ws)
+
+if __name__ == "__main__":
+    import uvicorn
+    cfg = load_config()
+    uvicorn.run(app, host=cfg["web"]["host"], port=int(cfg["web"]["port"]), reload=False)

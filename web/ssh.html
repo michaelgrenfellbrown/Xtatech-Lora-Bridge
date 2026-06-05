@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>SSH</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="/xtatech.png"/>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; color: #111; }
+    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .page-header { display: flex; align-items: center; gap: 14px; }
+    .page-header img { width: 120px; max-width: 34vw; height: auto; }
+    .page-header h2 { margin: 0 0 4px; }
+    .small { font-size: 12px; color: #666; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .nav a { color: #164f8b; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
+    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
+    .ok { color: #0a7a2f; }
+    .bad { color: #b42318; }
+    input { width: 100%; padding: 10px; box-sizing: border-box; font-size: 15px; }
+    button { padding: 10px 14px; margin: 8px 6px 0 0; cursor: pointer; border: 1px solid #cfcfcf; border-radius: 6px; background: #f6f6f6; }
+    button:hover { background: #ececec; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; min-height: 90px; overflow: auto; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="page-header">
+    <img src="/xtatech.png" alt="Xtatech logo"/>
+    <div>
+      <h2>SSH Access</h2>
+      <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/services">Services</a><a href="/metrics">Metrics</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Connection Status</h3>
+  <div class="status-grid">
+    <div class="status-item"><div class="label">Device</div><div id="device" class="value">-</div></div>
+    <div class="status-item"><div class="label">IP Address</div><div id="ip" class="value">-</div></div>
+    <div class="status-item"><div class="label">SSH Port</div><div id="port" class="value">-</div></div>
+    <div class="status-item"><div class="label">Service</div><div id="service" class="value">-</div></div>
+  </div>
+  <button onclick="loadStatus()">Refresh</button>
+</div>
+
+<div class="card">
+  <h3>SSH Command</h3>
+  <label class="small" for="ssh_user">Username</label>
+  <input id="ssh_user" value=""/>
+  <button onclick="buildCommand()">Update Command</button>
+  <button onclick="copyCommand()">Copy Command</button>
+  <pre id="ssh_command">Loading...</pre>
+</div>
+
+<div class="card">
+  <h3>Details</h3>
+  <pre id="details">Loading...</pre>
+</div>
+
+<script>
+let sshStatus = null;
+
+function setValue(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text || '-';
+  el.className = 'value ' + (cls || '');
+}
+
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/ssh/status');
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `${r.status} ${r.statusText}`);
+    sshStatus = data;
+    document.getElementById('ssh_user').value = data.current_user || '';
+    setValue('device', data.hostname || '-');
+    setValue('ip', data.ip || '-');
+    setValue('port', data.port_open_local ? '22 open' : '22 closed', data.port_open_local ? 'ok' : 'bad');
+    const svc = data.service_name ? `${data.service_name}: ${data.service_active || '-'}` : (data.service_error || '-');
+    setValue('service', svc, data.service_active === 'active' ? 'ok' : 'bad');
+    document.getElementById('details').textContent = JSON.stringify(data, null, 2);
+    buildCommand();
+  } catch (err) {
+    document.getElementById('details').textContent = 'SSH status failed: ' + err.message;
+  }
+}
+
+function buildCommand() {
+  if (!sshStatus) return;
+  const user = document.getElementById('ssh_user').value.trim() || sshStatus.current_user || 'pi';
+  const ip = sshStatus.ip || '<device-ip>';
+  document.getElementById('ssh_command').textContent = `ssh ${user}@${ip}`;
+}
+
+async function copyCommand() {
+  const text = document.getElementById('ssh_command').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    document.getElementById('details').textContent = 'Copied: ' + text + '\n\n' + JSON.stringify(sshStatus, null, 2);
+  } catch {
+    document.getElementById('details').textContent = 'Copy failed. Command:\n' + text;
+  }
+}
+
+loadStatus();
+</script>
+</body>
+</html>

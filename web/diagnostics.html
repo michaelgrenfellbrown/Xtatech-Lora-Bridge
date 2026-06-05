@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Diagnostics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="/xtatech.png"/>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; }
+    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .page-header { display: flex; align-items: center; gap: 14px; }
+    .page-header img { width: 120px; max-width: 34vw; height: auto; }
+    .page-header h2 { margin: 0 0 4px; }
+    .small { font-size: 12px; color: #666; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .nav a { color: #164f8b; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .col { flex: 1; min-width: 320px; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; height: 340px; overflow: auto; border-radius: 8px; }
+    button { padding: 10px 14px; margin-top: 8px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; vertical-align: top; }
+    .table-wrap { overflow-x: auto; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
+    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
+    .ok { color: #0a7a2f; }
+    .bad { color: #b42318; }
+    .warn { color: #8a5a00; }
+    .banner { display: none; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid #ffa39e; background: #fff1f0; color: #8c1d18; }
+    .banner.show { display: block; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="page-header">
+    <img src="/xtatech.png" alt="Xtatech logo"/>
+    <div>
+      <h2>Diagnostics</h2>
+      <div class="nav small"><a href="/">Dashboard</a><a href="/services">Services</a><a href="/metrics">Metrics</a><a href="/terminal">Terminal</a></div>
+      <button onclick="loadDiag()">Refresh</button>
+    </div>
+  </div>
+</div>
+<div id="diag_error" class="banner"></div>
+
+<div class="card">
+  <h3>Health Summary</h3>
+  <div class="status-grid">
+    <div class="status-item"><div class="label">MQTT</div><div id="mqtt_status" class="value">-</div></div>
+    <div class="status-item"><div class="label">Serial</div><div id="serial_status" class="value">-</div></div>
+    <div class="status-item"><div class="label">Candidate Ports</div><div id="candidate_ports" class="value">-</div></div>
+    <div class="status-item"><div class="label">Last Packet</div><div id="last_packet" class="value">-</div></div>
+    <div class="status-item"><div class="label">Raw Lines / Parsed / Dropped</div><div id="serial_counts" class="value">-</div></div>
+    <div class="status-item"><div class="label">Last Raw Line</div><div id="last_raw_line" class="value">-</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Serial Port Checks</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Device</th><th>Source</th><th>Resolved</th><th>Access</th><th>Open Test</th><th>Details</th></tr></thead>
+      <tbody id="port_checks"><tr><td colspan="6">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col"><div class="card"><h3>Status</h3><pre id="status">Loading...</pre></div></div>
+  <div class="col"><div class="card"><h3>Recent Logs</h3><pre id="logs">Loading...</pre></div></div>
+</div>
+<div class="card"><h3>Recent Packets</h3><pre id="packets">Loading...</pre></div>
+
+<script>
+const tzOpts = { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+
+function fmtTs(ts) {
+  if (ts === null || ts === undefined || ts === 0) return '-';
+  const d = new Date(Number(ts) * 1000);
+  return isNaN(d.getTime()) ? '-' : d.toLocaleString('en-ZA', tzOpts);
+}
+
+function addSastFields(obj) {
+  const out = { ...obj };
+  for (const key of Object.keys(out)) {
+    if (key === 'ts' || key.endsWith('_ts')) out[`${key}_sast`] = fmtTs(out[key]);
+  }
+  return out;
+}
+
+function fmtAge(seconds) {
+  if (seconds === null || seconds === undefined) return '-';
+  const s = Math.max(0, Number(seconds));
+  if (s < 60) return `${Math.floor(s)}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
+function setError(message) {
+  const el = document.getElementById('diag_error');
+  el.textContent = message || '';
+  el.className = message ? 'banner show' : 'banner';
+}
+
+function renderSummary(status) {
+  const mqtt = status.mqtt || {};
+  const serial = status.serial || {};
+  const rt = status.runtime || {};
+  const lastAge = rt.last_serial_rx_ts ? Math.floor(Date.now() / 1000 - Number(rt.last_serial_rx_ts)) : null;
+  document.getElementById('mqtt_status').textContent = mqtt.connected ? `Connected to ${mqtt.host}:${mqtt.port}` : `Offline: ${mqtt.host || '-'}:${mqtt.port || '-'}`;
+  document.getElementById('mqtt_status').className = 'value ' + (mqtt.connected ? 'ok' : 'bad');
+  document.getElementById('serial_status').textContent = rt.active_serial_port ? `${rt.active_serial_port} @ ${serial.baud || '-'}` : (rt.last_serial_error || 'Not connected');
+  document.getElementById('serial_status').className = 'value ' + (rt.serial_ok ? 'ok' : 'bad');
+  document.getElementById('candidate_ports').textContent = (rt.serial_candidates || []).join(', ') || '-';
+  document.getElementById('last_packet').textContent = rt.last_serial_rx_iso ? `${rt.last_serial_rx_iso} (${fmtAge(lastAge)} ago)` : '-';
+  document.getElementById('serial_counts').textContent = `${rt.serial_lines_seen || 0} / ${rt.serial_packets_parsed || 0} / ${rt.serial_parse_drops || 0}`;
+  document.getElementById('last_raw_line').textContent = rt.last_serial_line || '-';
+  renderPortChecks(rt);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function renderPortChecks(rt) {
+  const body = document.getElementById('port_checks');
+  const details = rt.serial_candidate_details || [];
+  const attempts = new Map((rt.serial_open_attempts || []).map((item) => [item.device, item]));
+  if (details.length === 0) {
+    body.innerHTML = '<tr><td colspan="6">No serial candidates found. Check USB cable, power, and whether the LoRa board enumerates as /dev/ttyACM* or /dev/ttyUSB*.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = '';
+  for (const item of details) {
+    const attempt = attempts.get(item.device) || {};
+    const openText = item.device === rt.active_serial_port ? 'ACTIVE' : (attempt.ok ? 'OK' : (attempt.error || '-'));
+    const access = `${item.exists ? 'exists' : 'missing'} / R:${item.readable ? 'yes' : 'no'} W:${item.writable ? 'yes' : 'no'}`;
+    const meta = [item.description, item.manufacturer, item.product, item.hwid].filter(Boolean).join(' | ');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(item.device)}</td><td>${escapeHtml(item.source)}</td><td>${escapeHtml(item.resolved || '-')}</td><td>${escapeHtml(access)}</td><td>${escapeHtml(openText)}</td><td>${escapeHtml(meta || '-')}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+async function loadDiag() {
+  try {
+    const r = await fetch('/api/diagnostics');
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    const j = await r.json();
+    setError('');
+    renderSummary(j.status || {});
+    document.getElementById('status').textContent = JSON.stringify(j.status, null, 2);
+    document.getElementById('logs').textContent = (j.recent_logs || []).length
+      ? JSON.stringify((j.recent_logs || []).map(addSastFields), null, 2)
+      : 'No logs yet.';
+    document.getElementById('packets').textContent = (j.recent_packets || []).length
+      ? JSON.stringify((j.recent_packets || []).map(addSastFields), null, 2)
+      : 'No packets received yet.';
+  } catch (err) {
+    setError(`Diagnostics refresh failed: ${err.message}`);
+  }
+}
+
+setInterval(loadDiag, 3000);
+loadDiag();
+</script>
+</body>
+</html>

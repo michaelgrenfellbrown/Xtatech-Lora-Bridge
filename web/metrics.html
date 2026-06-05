@@ -1,0 +1,267 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Raspberry Pi Metrics</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/png" href="/xtatech.png"/>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; color: #111; }
+    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .page-header { display: flex; align-items: center; gap: 14px; }
+    .page-header img { width: 120px; max-width: 34vw; height: auto; }
+    .page-header h2 { margin: 0 0 4px; }
+    .small { font-size: 12px; color: #666; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+    .nav a { color: #164f8b; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .col { flex: 1; min-width: 320px; }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
+    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
+    .meter { height: 10px; background: #e9ecef; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+    .meter-fill { height: 100%; width: 0%; background: #0a7a2f; transition: width .2s ease, background .2s ease; }
+    .ok { color: #0a7a2f; }
+    .warn { color: #8a5a00; }
+    .bad { color: #b42318; }
+    .banner { display: none; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid #ffa39e; background: #fff1f0; color: #8c1d18; }
+    .banner.show { display: block; }
+    button { padding: 10px 14px; margin-top: 8px; cursor: pointer; border: 1px solid #cfcfcf; border-radius: 6px; background: #f6f6f6; }
+    button:hover { background: #ececec; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; vertical-align: top; }
+    .table-wrap { overflow-x: auto; }
+    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; min-height: 180px; overflow: auto; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="page-header">
+    <img src="/xtatech.png" alt="Xtatech logo"/>
+    <div>
+      <h2>Raspberry Pi Metrics</h2>
+      <div id="summary" class="small">Loading...</div>
+      <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/services">Services</a><a href="/ssh">SSH</a><a href="/terminal">Terminal</a></div>
+      <button onclick="loadMetrics()">Refresh</button>
+    </div>
+  </div>
+</div>
+<div id="metrics_error" class="banner"></div>
+
+<div class="card">
+  <h3>System Usage</h3>
+  <div class="status-grid">
+    <div class="status-item">
+      <div class="label">CPU Usage</div><div id="cpu_percent" class="value">-</div><div class="meter"><div id="cpu_meter" class="meter-fill"></div></div>
+    </div>
+    <div class="status-item">
+      <div class="label">Memory Usage</div><div id="mem_percent" class="value">-</div><div class="meter"><div id="mem_meter" class="meter-fill"></div></div>
+    </div>
+    <div class="status-item">
+      <div class="label">Disk Usage</div><div id="disk_percent" class="value">-</div><div class="meter"><div id="disk_meter" class="meter-fill"></div></div>
+    </div>
+    <div class="status-item">
+      <div class="label">Swap Usage</div><div id="swap_percent" class="value">-</div><div class="meter"><div id="swap_meter" class="meter-fill"></div></div>
+    </div>
+    <div class="status-item"><div class="label">CPU Temperature</div><div id="temp" class="value">-</div></div>
+    <div class="status-item"><div class="label">Load Average</div><div id="load_avg" class="value">-</div></div>
+    <div class="status-item"><div class="label">Power / Throttling</div><div id="throttled" class="value">-</div></div>
+    <div class="status-item"><div class="label">Bridge Uptime</div><div id="bridge_uptime" class="value">-</div></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <h3>Host</h3>
+      <div class="status-grid">
+        <div class="status-item"><div class="label">Hostname</div><div id="hostname" class="value">-</div></div>
+        <div class="status-item"><div class="label">IP Address</div><div id="ip" class="value">-</div></div>
+        <div class="status-item"><div class="label">Model</div><div id="model" class="value">-</div></div>
+        <div class="status-item"><div class="label">Kernel</div><div id="kernel" class="value">-</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <h3>Bridge Counters</h3>
+      <div class="status-grid">
+        <div class="status-item"><div class="label">Serial Lines</div><div id="serial_lines" class="value">-</div></div>
+        <div class="status-item"><div class="label">Packets Parsed</div><div id="packets_parsed" class="value">-</div></div>
+        <div class="status-item"><div class="label">Parse Drops</div><div id="parse_drops" class="value">-</div></div>
+        <div class="status-item"><div class="label">Nodes Seen</div><div id="nodes_seen" class="value">-</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <h3>Network Interfaces</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>RX</th><th>RX Packets</th><th>TX</th><th>TX Packets</th></tr></thead>
+          <tbody id="network_rows"><tr><td colspan="5">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <h3>Top Processes</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>PID</th><th>Command</th><th>CPU %</th><th>Mem %</th></tr></thead>
+          <tbody id="process_rows"><tr><td colspan="4">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Raw Metrics</h3>
+  <pre id="raw">Loading...</pre>
+</div>
+
+<script>
+function fmtBytes(bytes) {
+  const n = Number(bytes || 0);
+  if (!n) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = n;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+function fmtAge(seconds) {
+  if (seconds === null || seconds === undefined) return '-';
+  const s = Math.max(0, Number(seconds));
+  if (s < 60) return `${Math.floor(s)}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.floor(s % 60)}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function setError(message) {
+  const el = document.getElementById('metrics_error');
+  el.textContent = message || '';
+  el.className = message ? 'banner show' : 'banner';
+}
+
+function levelClass(percent) {
+  const n = Number(percent);
+  if (!Number.isFinite(n)) return '';
+  if (n >= 90) return 'bad';
+  if (n >= 75) return 'warn';
+  return 'ok';
+}
+
+function setMeter(id, percent) {
+  const el = document.getElementById(id);
+  const n = Number(percent);
+  const width = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+  el.style.width = `${width}%`;
+  el.style.background = width >= 90 ? '#b42318' : (width >= 75 ? '#d48806' : '#0a7a2f');
+}
+
+function setPercent(id, meterId, percent, detail) {
+  const el = document.getElementById(id);
+  const n = Number(percent);
+  el.textContent = Number.isFinite(n) ? `${n.toFixed(1)}%${detail ? ' / ' + detail : ''}` : '-';
+  el.className = 'value ' + levelClass(n);
+  setMeter(meterId, n);
+}
+
+function renderNetwork(items) {
+  const body = document.getElementById('network_rows');
+  if (!items || !items.length) {
+    body.innerHTML = '<tr><td colspan="5">No network counters available.</td></tr>';
+    return;
+  }
+  body.innerHTML = '';
+  for (const item of items) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(item.name)}</td><td>${fmtBytes(item.rx_bytes)}</td><td>${escapeHtml(item.rx_packets)}</td><td>${fmtBytes(item.tx_bytes)}</td><td>${escapeHtml(item.tx_packets)}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+function renderProcesses(items) {
+  const body = document.getElementById('process_rows');
+  if (!items || !items.length) {
+    body.innerHTML = '<tr><td colspan="4">No process list available.</td></tr>';
+    return;
+  }
+  body.innerHTML = '';
+  for (const item of items) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(item.pid)}</td><td>${escapeHtml(item.command)}</td><td>${escapeHtml(item.cpu_percent)}</td><td>${escapeHtml(item.mem_percent)}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+function renderMetrics(j) {
+  const host = j.host || {};
+  const cpu = j.cpu || {};
+  const mem = j.memory || {};
+  const swap = j.swap || {};
+  const disk = j.disk || {};
+  const bridge = j.bridge || {};
+  const throttled = cpu.throttled || {};
+
+  document.getElementById('summary').textContent = `${host.hostname || '-'} / ${host.ip || '-'} / updated ${new Date().toLocaleTimeString()}`;
+  setPercent('cpu_percent', 'cpu_meter', cpu.percent, `${cpu.cores || 0} cores`);
+  setPercent('mem_percent', 'mem_meter', mem.used_percent, `${fmtBytes(mem.used_bytes)} of ${fmtBytes(mem.total_bytes)}`);
+  setPercent('disk_percent', 'disk_meter', disk.used_percent, `${fmtBytes(disk.used_bytes)} of ${fmtBytes(disk.total_bytes)}`);
+  setPercent('swap_percent', 'swap_meter', swap.used_percent, `${fmtBytes(swap.used_bytes)} of ${fmtBytes(swap.total_bytes)}`);
+
+  const temp = Number(cpu.temperature_c);
+  document.getElementById('temp').textContent = Number.isFinite(temp) ? `${temp.toFixed(1)} C` : '-';
+  document.getElementById('temp').className = 'value ' + (temp >= 80 ? 'bad' : (temp >= 70 ? 'warn' : 'ok'));
+  document.getElementById('load_avg').textContent = `${cpu.load_1m ?? '-'} / ${cpu.load_5m ?? '-'} / ${cpu.load_15m ?? '-'}`;
+  document.getElementById('throttled').textContent = throttled.available === false ? 'vcgencmd unavailable' : (throttled.raw || '-');
+  document.getElementById('throttled').className = 'value ' + ((throttled.under_voltage_now || throttled.throttled_now || throttled.soft_temp_limit_now) ? 'bad' : ((throttled.under_voltage_seen || throttled.throttled_seen) ? 'warn' : 'ok'));
+  document.getElementById('bridge_uptime').textContent = fmtAge(bridge.service_uptime_s);
+
+  document.getElementById('hostname').textContent = host.hostname || '-';
+  document.getElementById('ip').textContent = host.ip || '-';
+  document.getElementById('model').textContent = host.model || host.platform || '-';
+  document.getElementById('kernel').textContent = host.kernel || '-';
+  document.getElementById('serial_lines').textContent = bridge.serial_lines_seen ?? 0;
+  document.getElementById('packets_parsed').textContent = bridge.serial_packets_parsed ?? 0;
+  document.getElementById('parse_drops').textContent = bridge.serial_parse_drops ?? 0;
+  document.getElementById('nodes_seen').textContent = bridge.nodes_seen ?? 0;
+
+  renderNetwork(j.network || []);
+  renderProcesses(j.processes || []);
+  document.getElementById('raw').textContent = JSON.stringify(j, null, 2);
+}
+
+async function loadMetrics() {
+  try {
+    const r = await fetch('/api/system/metrics');
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || `${r.status} ${r.statusText}`);
+    setError('');
+    renderMetrics(j);
+  } catch (err) {
+    setError(`Metrics refresh failed: ${err.message}`);
+  }
+}
+
+setInterval(loadMetrics, 3000);
+loadMetrics();
+</script>
+</body>
+</html>
