@@ -20,6 +20,7 @@ if ! id "$RUN_USER" >/dev/null 2>&1; then
 fi
 
 echo "Using service user: $RUN_USER"
+RUN_HOME="$(getent passwd "$RUN_USER" | cut -d: -f6)"
 
 echo "== Install OS dependencies =="
 apt-get update
@@ -42,6 +43,11 @@ cp -f "$SCRIPT_DIR/web/metrics.html" "$APP_DIR/web/metrics.html"
 cp -f "$SCRIPT_DIR/web/ssh.html" "$APP_DIR/web/ssh.html"
 cp -f "$SCRIPT_DIR/web/terminal.html" "$APP_DIR/web/terminal.html"
 cp -f "$SCRIPT_DIR/web/xtatech.png" "$APP_DIR/web/xtatech.png"
+if git -C "$SCRIPT_DIR" rev-parse HEAD >/dev/null 2>&1; then
+  git -C "$SCRIPT_DIR" rev-parse HEAD > "$APP_DIR/.installed_commit"
+else
+  echo "unknown" > "$APP_DIR/.installed_commit"
+fi
 chown -R "$RUN_USER":"$RUN_USER" "$APP_DIR"
 
 echo "== Create local HTTPS certificate if missing =="
@@ -119,9 +125,10 @@ wifi.powersave = 2
 EOF
 systemctl restart NetworkManager || true
 
-echo "== Allow service user to reboot via watchdog (sudoers) =="
+echo "== Allow service user to reboot and install verified Downloads repo (sudoers) =="
 cat >/etc/sudoers.d/xtatech-lora-bridge-watchdog <<EOF
 ${RUN_USER} ALL=NOPASSWD: /usr/bin/systemctl reboot
+${RUN_USER} ALL=NOPASSWD: /bin/bash ${RUN_HOME}/Downloads/Xtatech\ Lora\ Bridge/install.sh
 EOF
 chmod 440 /etc/sudoers.d/xtatech-lora-bridge-watchdog
 

@@ -31,12 +31,32 @@ SERVICE_NAME = "xtatech-lora-bridge.service"
 GITHUB_REPO_URL = "https://github.com/michaelgrenfellbrown/Xtatech-Lora-Bridge.git"
 REPO_CLONE_TARGET = Path.home() / "Downloads" / "Xtatech Lora Bridge"
 REPO_CLONE_LOG = Path.home() / "Downloads" / "xtatech-lora-bridge-clone.log"
+REPO_INSTALL_LOG = Path.home() / "Downloads" / "xtatech-lora-bridge-install.log"
+INSTALLED_COMMIT_PATH = BASE_DIR / ".installed_commit"
 
 _RSSI_RE = re.compile(r"rssi[:=]\s*(-?\d+)", re.IGNORECASE)
 _KV_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_-]*)\s*[:=]\s*([^,\s;]+)")
 _GIT_PROGRESS_RE = re.compile(r"(Receiving objects|Resolving deltas|Counting objects|Compressing objects):\s+(\d+)%")
 BOOT_TS = time.time()
 CLONE_PROC: Optional[subprocess.Popen] = None
+INSTALL_PROC: Optional[subprocess.Popen] = None
+
+INSTALL_STAGES = [
+    ("== Xtatech LoRa Bridge installer", 5, "Starting installer"),
+    ("== Install OS dependencies ==", 10, "Installing OS dependencies"),
+    ("== Create app directory ==", 20, "Creating app directory"),
+    ("== Copy files into", 30, "Copying app files"),
+    ("== Create local HTTPS certificate if missing ==", 40, "Checking HTTPS certificate"),
+    ("== Create venv and install Python requirements ==", 50, "Installing Python requirements"),
+    ("== Configure local terminal token ==", 62, "Configuring terminal"),
+    ("== Serial permissions ==", 68, "Updating serial permissions"),
+    ("== Disable system sleep targets", 74, "Disabling sleep"),
+    ("== Disable USB autosuspend", 80, "Disabling USB autosuspend"),
+    ("== Disable Wi-Fi power saving ==", 84, "Disabling Wi-Fi power saving"),
+    ("== Allow service user", 88, "Configuring sudo permissions"),
+    ("== Install systemd service ==", 94, "Installing service"),
+    ("== Installed and started ==", 100, "Install complete"),
+]
 
 
 def run_git_text(args: List[str], cwd: Optional[Path] = None, timeout: int = 30) -> str:
@@ -53,6 +73,17 @@ def run_git_text(args: List[str], cwd: Optional[Path] = None, timeout: int = 30)
     return proc.stdout.strip()
 
 
+def run_git_ok(args: List[str], cwd: Optional[Path] = None, timeout: int = 30) -> bool:
+    proc = subprocess.run(
+        args,
+        cwd=str(cwd) if cwd else None,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=timeout,
+    )
+    return proc.returncode == 0
+
+
 def github_head_sha(git_bin: str) -> str:
     output = run_git_text([git_bin, "ls-remote", GITHUB_REPO_URL, "HEAD"], timeout=45)
     if not output:
@@ -62,6 +93,95 @@ def github_head_sha(git_bin: str) -> str:
 
 def local_repo_sha(git_bin: str, target: Path) -> str:
     return run_git_text([git_bin, "-C", str(target), "rev-parse", "HEAD"], timeout=15)
+
+
+def installed_repo_sha(git_bin: str) -> str:
+    if INSTALLED_COMMIT_PATH.exists():
+        return INSTALLED_COMMIT_PATH.read_text(encoding="utf-8").strip()
+    if (BASE_DIR / ".git").exists():
+        return local_repo_sha(git_bin, BASE_DIR)
+    return ""
+
+
+def verify_download_repo(git_bin: str) -> Dict[str, Any]:
+    target = REPO_CLONE_TARGET.expanduser()
+    if not target.exists():
+        raise RuntimeError(f"Downloads repo does not exist: {target}")
+    if not (target / ".git").exists():
+        raise RuntimeError(f"Downloads folder is not a git repository: {target}")
+
+    install_path = target / "install.sh"
+    if not install_path.exists():
+        raise RuntimeError(f"install.sh is missing from: {target}")
+
+    run_git_text([git_bin, "-C", str(target), "fsck", "--no-progress"], timeout=60)
+    local_sha = local_repo_sha(git_bin, target)
+    remote_sha = github_head_sha(git_bin)
+    if local_sha != remote_sha:
+        raise RuntimeError(
+            "Downloads repo does not match GitHub HEAD. Run Check / Update GitHub Repo first."
+        )
+
+    return {
+        "target": target,
+        "install_path": install_path,
+        "local_head": local_sha,
+        "github_head": remote_sha,
+    }
+
+
+def install_eligibility(git_bin: str) -> Dict[str, Any]:
+    target = REPO_CLONE_TARGET.expanduser()
+    try:
+        verified = verify_download_repo(git_bin)
+        installed_sha = installed_repo_sha(git_bin)
+        download_sha = verified["local_head"]
+
+        if not installed_sha:
+            return {
+                "ok": True,
+                "eligible": False,
+                "reason": "Installed version marker is missing",
+                "target": str(target),
+                "download_head": download_sha,
+                "github_head": verified["github_head"],
+                "installed_head": "",
+            }
+
+        if installed_sha == download_sha:
+            return {
+                "ok": True,
+                "eligible": False,
+                "reason": "Downloaded version is already installed",
+                "target": str(target),
+                "download_head": download_sha,
+                "github_head": verified["github_head"],
+                "installed_head": installed_sha,
+            }
+
+        newer = run_git_ok(
+            [git_bin, "-C", str(target), "merge-base", "--is-ancestor", installed_sha, download_sha],
+            timeout=20,
+        )
+        return {
+            "ok": True,
+            "eligible": newer,
+            "reason": "Downloaded version is newer" if newer else "Downloaded version is not newer than installed",
+            "target": str(target),
+            "download_head": download_sha,
+            "github_head": verified["github_head"],
+            "installed_head": installed_sha,
+        }
+    except Exception as e:
+        return {
+            "ok": True,
+            "eligible": False,
+            "reason": str(e),
+            "target": str(target),
+            "download_head": "",
+            "github_head": "",
+            "installed_head": "",
+        }
 
 
 def now_ts() -> float:
@@ -1688,6 +1808,143 @@ async def api_clone_repo_status(request: Request):
         return {
             "ok": True,
             "target": str(target),
+            "log": str(log_path),
+            "stage": stage,
+            "percent": percent,
+            "running": running,
+            "complete": complete,
+            "failed": failed,
+            "log_tail": tail,
+        }
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/repo/install/eligibility")
+async def api_install_download_repo_eligibility(request: Request):
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    try:
+        git_bin = shutil.which("git")
+        if not git_bin:
+            return JSONResponse(
+                {
+                    "ok": True,
+                    "eligible": False,
+                    "reason": "git is not installed on this Raspberry Pi",
+                    "target": str(REPO_CLONE_TARGET.expanduser()),
+                    "download_head": "",
+                    "github_head": "",
+                    "installed_head": "",
+                }
+            )
+        return install_eligibility(git_bin)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/repo/install")
+async def api_install_download_repo(request: Request):
+    global INSTALL_PROC
+
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    try:
+        if INSTALL_PROC and INSTALL_PROC.poll() is None:
+            return JSONResponse({"error": "An install is already running"}, status_code=409)
+        if INSTALL_PROC and INSTALL_PROC.poll() is not None:
+            INSTALL_PROC = None
+
+        git_bin = shutil.which("git")
+        if not git_bin:
+            return JSONResponse({"error": "git is not installed on this Raspberry Pi"}, status_code=500)
+
+        eligibility = install_eligibility(git_bin)
+        if not eligibility.get("eligible"):
+            return JSONResponse(
+                {"error": eligibility.get("reason") or "Downloaded version is not newer than installed"},
+                status_code=409,
+            )
+
+        verified = verify_download_repo(git_bin)
+        install_path = verified["install_path"]
+        log_path = REPO_INSTALL_LOG.expanduser()
+
+        log_file = log_path.open("wb")
+        log_file.write(
+            (
+                "Verified Downloads repository before install.\n"
+                f"Local HEAD: {verified['local_head']}\n"
+                f"GitHub HEAD: {verified['github_head']}\n"
+                f"Installer: {install_path}\n"
+            ).encode("utf-8")
+        )
+        log_file.flush()
+        try:
+            INSTALL_PROC = subprocess.Popen(
+                ["/usr/bin/sudo", "-n", "/bin/bash", str(install_path)],
+                cwd=str(verified["target"]),
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        finally:
+            log_file.close()
+
+        await logs.add("WARN", f"Verified Downloads repo install requested from web UI: {install_path}")
+        return {
+            "ok": True,
+            "message": "Install started from verified Downloads repo",
+            "target": str(verified["target"]),
+            "installer": str(install_path),
+            "log": str(log_path),
+            "pid": INSTALL_PROC.pid,
+            "local_head": verified["local_head"],
+            "github_head": verified["github_head"],
+        }
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/repo/install/status")
+async def api_install_download_repo_status(request: Request):
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    try:
+        log_path = REPO_INSTALL_LOG.expanduser()
+        text = ""
+        if log_path.exists():
+            text = log_path.read_text(encoding="utf-8", errors="replace")
+
+        returncode = INSTALL_PROC.poll() if INSTALL_PROC else None
+        running = INSTALL_PROC is not None and returncode is None
+        percent = 0
+        stage = "Waiting"
+
+        if "Verified Downloads repository before install." in text:
+            percent = 3
+            stage = "Verified download"
+
+        for marker, marker_percent, marker_stage in INSTALL_STAGES:
+            if marker in text:
+                percent = marker_percent
+                stage = marker_stage
+
+        complete = "== Installed and started ==" in text or returncode == 0
+        failed = returncode is not None and returncode != 0
+
+        if complete:
+            percent = 100
+            stage = "Install complete"
+        elif failed:
+            stage = "Install failed"
+
+        tail = text[-6000:] if text else ""
+        return {
+            "ok": True,
             "log": str(log_path),
             "stage": stage,
             "percent": percent,

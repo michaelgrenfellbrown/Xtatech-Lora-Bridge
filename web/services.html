@@ -62,6 +62,7 @@
       <button data-action onclick="applyConfig()">Apply Config</button>
       <button data-action onclick="restartService()">Restart Service</button>
       <button data-action onclick="cloneRepo()">Check / Update GitHub Repo</button>
+      <button id="install_repo_button" data-action data-install-action onclick="installVerifiedRepo()" disabled>Install Verified Repo</button>
       <button data-action class="danger" onclick="rebootPi()">Reboot Raspberry Pi</button>
       <div id="clone_progress" class="progress-wrap" aria-live="polite">
         <div class="progress-label">
@@ -95,14 +96,25 @@ const cloneProgressEl = document.getElementById('clone_progress');
 const cloneStageEl = document.getElementById('clone_stage');
 const clonePercentEl = document.getElementById('clone_percent');
 const cloneFillEl = document.getElementById('clone_fill');
+const installRepoButton = document.getElementById('install_repo_button');
 let clonePollTimer = null;
+let installPollTimer = null;
+let installPollFailures = 0;
+let installRebootAsked = false;
+let busyState = false;
+let installEligible = false;
+let installEligibilityReason = 'Checking downloaded version';
 
 function setCfgStatus(text) {
   cfgStatusEl.textContent = text;
 }
 
 function setBusy(busy) {
-  document.querySelectorAll('[data-action]').forEach((button) => button.disabled = busy);
+  busyState = busy;
+  document.querySelectorAll('[data-action]').forEach((button) => {
+    button.disabled = busy || (button.hasAttribute('data-install-action') && !installEligible);
+  });
+  installRepoButton.title = installEligibilityReason;
 }
 
 function setCloneProgress(percent, stage, visible = true) {
@@ -117,6 +129,34 @@ function stopClonePolling() {
   if (clonePollTimer) {
     clearInterval(clonePollTimer);
     clonePollTimer = null;
+  }
+}
+
+function stopInstallPolling() {
+  if (installPollTimer) {
+    clearInterval(installPollTimer);
+    installPollTimer = null;
+  }
+}
+
+async function refreshInstallEligibility(showStatus = false) {
+  try {
+    const j = await fetchJson('/api/repo/install/eligibility');
+    installEligible = !!j.eligible;
+    installEligibilityReason = j.reason || (installEligible ? 'Downloaded version is newer' : 'Install is not available');
+    setBusy(busyState);
+    if (showStatus) {
+      statusEl.textContent = JSON.stringify(j, null, 2);
+    }
+    return j;
+  } catch (err) {
+    installEligible = false;
+    installEligibilityReason = 'Install check failed: ' + err.message;
+    setBusy(busyState);
+    if (showStatus) {
+      statusEl.textContent = installEligibilityReason;
+    }
+    return null;
   }
 }
 
@@ -233,6 +273,7 @@ async function cloneRepo() {
     statusEl.textContent = JSON.stringify(j, null, 2);
     if (j.current) {
       setCloneProgress(100, 'Already current');
+      await refreshInstallEligibility();
       setBusy(false);
       return;
     }
@@ -252,6 +293,7 @@ async function pollCloneProgress() {
     statusEl.textContent = JSON.stringify(j, null, 2);
     if (j.complete) {
       stopClonePolling();
+      await refreshInstallEligibility();
       setBusy(false);
     }
     if (j.failed) {
@@ -262,6 +304,81 @@ async function pollCloneProgress() {
     stopClonePolling();
     statusEl.textContent = 'Clone progress failed: ' + err.message;
     setCloneProgress(0, 'Progress unavailable');
+    setBusy(false);
+  }
+}
+
+async function installVerifiedRepo() {
+  await refreshInstallEligibility();
+  if (!installEligible) {
+    statusEl.textContent = 'Install blocked: ' + installEligibilityReason;
+    return;
+  }
+  if (!confirm("Verify ~/Downloads/Xtatech Lora Bridge against GitHub, then run install.sh if it is correct?")) return;
+  setBusy(true);
+  stopClonePolling();
+  stopInstallPolling();
+  installPollFailures = 0;
+  installRebootAsked = false;
+  setCloneProgress(0, 'Verifying download');
+  statusEl.textContent = 'Verifying Downloads repo before install...';
+  try {
+    const j = await fetchJson('/api/repo/install', { method: 'POST' });
+    statusEl.textContent = JSON.stringify(j, null, 2);
+    installPollTimer = setInterval(pollInstallProgress, 1500);
+    await pollInstallProgress();
+  } catch (err) {
+    statusEl.textContent = 'Install failed to start: ' + err.message;
+    setCloneProgress(0, 'Install blocked');
+    setBusy(false);
+  }
+}
+
+async function pollInstallProgress() {
+  try {
+    const j = await fetchJson('/api/repo/install/status');
+    installPollFailures = 0;
+    setCloneProgress(j.percent, j.stage);
+    statusEl.textContent = JSON.stringify(j, null, 2);
+    if (j.complete) {
+      stopInstallPolling();
+      await refreshInstallEligibility();
+      setBusy(false);
+      await askRebootAfterInstall();
+    }
+    if (j.failed) {
+      stopInstallPolling();
+      setBusy(false);
+    }
+  } catch (err) {
+    installPollFailures += 1;
+    setCloneProgress(95, 'Waiting for web UI to return');
+    statusEl.textContent = 'Install is still running or the web UI is restarting...\n\n' + err.message;
+    if (installPollFailures > 80) {
+      stopInstallPolling();
+      setCloneProgress(0, 'Install status unavailable');
+      setBusy(false);
+    }
+  }
+}
+
+async function askRebootAfterInstall() {
+  if (installRebootAsked) return;
+  installRebootAsked = true;
+  if (!confirm('Install complete. Reboot the Raspberry Pi now?')) return;
+  const typed = prompt('Type REBOOT to confirm.');
+  if (typed !== 'REBOOT') {
+    statusEl.textContent += '\n\nReboot cancelled.';
+    return;
+  }
+  setBusy(true);
+  statusEl.textContent = 'Rebooting Raspberry Pi...';
+  try {
+    const j = await fetchJson('/api/system/reboot', { method: 'POST' });
+    statusEl.textContent = JSON.stringify(j, null, 2) + '\n\nThe Raspberry Pi should go offline briefly.';
+  } catch (err) {
+    statusEl.textContent = 'Reboot failed: ' + err.message;
+  } finally {
     setBusy(false);
   }
 }
@@ -287,6 +404,7 @@ async function rebootPi() {
 
 loadStatus();
 loadConfig();
+refreshInstallEligibility();
 </script>
 </body>
 </html>
