@@ -31,6 +31,10 @@
     .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
     .ok { color: #0a7a2f; }
     .bad { color: #b42318; }
+    .progress-wrap { display: none; margin: 12px 0; }
+    .progress-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 13px; color: #444; }
+    .progress-track { height: 14px; background: #e8e8e8; border: 1px solid #d6d6d6; border-radius: 7px; overflow: hidden; }
+    .progress-fill { width: 0%; height: 100%; background: #0a7a2f; transition: width .25s ease; }
   </style>
 </head>
 <body>
@@ -57,7 +61,17 @@
       <button data-action onclick="loadStatus()">Refresh Status</button>
       <button data-action onclick="applyConfig()">Apply Config</button>
       <button data-action onclick="restartService()">Restart Service</button>
+      <button data-action onclick="cloneRepo()">Check / Update GitHub Repo</button>
       <button data-action class="danger" onclick="rebootPi()">Reboot Raspberry Pi</button>
+      <div id="clone_progress" class="progress-wrap" aria-live="polite">
+        <div class="progress-label">
+          <span id="clone_stage">Preparing download</span>
+          <strong id="clone_percent">0%</strong>
+        </div>
+        <div class="progress-track">
+          <div id="clone_fill" class="progress-fill"></div>
+        </div>
+      </div>
       <pre id="service_status">Loading...</pre>
     </div>
   </div>
@@ -77,6 +91,11 @@
 const statusEl = document.getElementById('service_status');
 const cfgEl = document.getElementById('cfg');
 const cfgStatusEl = document.getElementById('cfg_status');
+const cloneProgressEl = document.getElementById('clone_progress');
+const cloneStageEl = document.getElementById('clone_stage');
+const clonePercentEl = document.getElementById('clone_percent');
+const cloneFillEl = document.getElementById('clone_fill');
+let clonePollTimer = null;
 
 function setCfgStatus(text) {
   cfgStatusEl.textContent = text;
@@ -84,6 +103,21 @@ function setCfgStatus(text) {
 
 function setBusy(busy) {
   document.querySelectorAll('[data-action]').forEach((button) => button.disabled = busy);
+}
+
+function setCloneProgress(percent, stage, visible = true) {
+  const value = Math.max(0, Math.min(Number(percent) || 0, 100));
+  cloneProgressEl.style.display = visible ? 'block' : 'none';
+  cloneStageEl.textContent = stage || 'Downloading';
+  clonePercentEl.textContent = `${Math.round(value)}%`;
+  cloneFillEl.style.width = `${value}%`;
+}
+
+function stopClonePolling() {
+  if (clonePollTimer) {
+    clearInterval(clonePollTimer);
+    clonePollTimer = null;
+  }
 }
 
 function fmtAge(seconds) {
@@ -184,6 +218,50 @@ async function restartService() {
   } catch (err) {
     statusEl.textContent = 'Restart failed: ' + err.message;
   } finally {
+    setBusy(false);
+  }
+}
+
+async function cloneRepo() {
+  if (!confirm("Check ~/Downloads/Xtatech Lora Bridge against GitHub and overwrite it if it is older?")) return;
+  setBusy(true);
+  stopClonePolling();
+  setCloneProgress(0, 'Checking GitHub');
+  statusEl.textContent = 'Checking GitHub repo version...';
+  try {
+    const j = await fetchJson('/api/repo/clone', { method: 'POST' });
+    statusEl.textContent = JSON.stringify(j, null, 2);
+    if (j.current) {
+      setCloneProgress(100, 'Already current');
+      setBusy(false);
+      return;
+    }
+    clonePollTimer = setInterval(pollCloneProgress, 1000);
+    await pollCloneProgress();
+  } catch (err) {
+    statusEl.textContent = 'Repo update failed: ' + err.message;
+    setCloneProgress(0, 'Update failed');
+    setBusy(false);
+  }
+}
+
+async function pollCloneProgress() {
+  try {
+    const j = await fetchJson('/api/repo/clone/status');
+    setCloneProgress(j.percent, j.stage);
+    statusEl.textContent = JSON.stringify(j, null, 2);
+    if (j.complete) {
+      stopClonePolling();
+      setBusy(false);
+    }
+    if (j.failed) {
+      stopClonePolling();
+      setBusy(false);
+    }
+  } catch (err) {
+    stopClonePolling();
+    statusEl.textContent = 'Clone progress failed: ' + err.message;
+    setCloneProgress(0, 'Progress unavailable');
     setBusy(false);
   }
 }

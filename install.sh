@@ -23,7 +23,7 @@ echo "Using service user: $RUN_USER"
 
 echo "== Install OS dependencies =="
 apt-get update
-apt-get install -y --no-install-recommends   ${PY_BIN} ${PY_BIN}-venv ${PY_BIN}-pip   ca-certificates   openssl   mosquitto-clients   network-manager
+apt-get install -y --no-install-recommends   ${PY_BIN} ${PY_BIN}-venv ${PY_BIN}-pip   ca-certificates   openssl   git   mosquitto-clients   network-manager
 
 echo "== Create app directory =="
 mkdir -p "$APP_DIR/web"

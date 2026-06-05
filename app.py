@@ -28,10 +28,40 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 WEB_DIR = BASE_DIR / "web"
 # Systemd unit name; must match install.sh (xtatech-lora-bridge.service)
 SERVICE_NAME = "xtatech-lora-bridge.service"
+GITHUB_REPO_URL = "https://github.com/michaelgrenfellbrown/Xtatech-Lora-Bridge.git"
+REPO_CLONE_TARGET = Path.home() / "Downloads" / "Xtatech Lora Bridge"
+REPO_CLONE_LOG = Path.home() / "Downloads" / "xtatech-lora-bridge-clone.log"
 
 _RSSI_RE = re.compile(r"rssi[:=]\s*(-?\d+)", re.IGNORECASE)
 _KV_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_-]*)\s*[:=]\s*([^,\s;]+)")
+_GIT_PROGRESS_RE = re.compile(r"(Receiving objects|Resolving deltas|Counting objects|Compressing objects):\s+(\d+)%")
 BOOT_TS = time.time()
+CLONE_PROC: Optional[subprocess.Popen] = None
+
+
+def run_git_text(args: List[str], cwd: Optional[Path] = None, timeout: int = 30) -> str:
+    proc = subprocess.run(
+        args,
+        cwd=str(cwd) if cwd else None,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(detail or f"git command failed with exit code {proc.returncode}")
+    return proc.stdout.strip()
+
+
+def github_head_sha(git_bin: str) -> str:
+    output = run_git_text([git_bin, "ls-remote", GITHUB_REPO_URL, "HEAD"], timeout=45)
+    if not output:
+        raise RuntimeError("GitHub did not return a HEAD commit")
+    return output.split()[0]
+
+
+def local_repo_sha(git_bin: str, target: Path) -> str:
+    return run_git_text([git_bin, "-C", str(target), "rev-parse", "HEAD"], timeout=15)
 
 
 def now_ts() -> float:
@@ -1510,6 +1540,162 @@ async def api_restart_service(request: Request):
             stderr=subprocess.DEVNULL,
         )
         return {"ok": True, "message": f"Restart triggered for {SERVICE_NAME}"}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/repo/clone")
+async def api_clone_repo(request: Request):
+    global CLONE_PROC
+
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    try:
+        if CLONE_PROC and CLONE_PROC.poll() is None:
+            return JSONResponse({"error": "A GitHub clone is already running"}, status_code=409)
+        if CLONE_PROC and CLONE_PROC.poll() is not None:
+            CLONE_PROC = None
+
+        git_bin = shutil.which("git")
+        if not git_bin:
+            return JSONResponse({"error": "git is not installed on this Raspberry Pi"}, status_code=500)
+
+        target = REPO_CLONE_TARGET.expanduser()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        log_path = REPO_CLONE_LOG.expanduser()
+
+        remote_sha = github_head_sha(git_bin)
+        local_sha = ""
+        if target.exists():
+            if not (target / ".git").exists():
+                local_sha = "not-a-git-repository"
+            else:
+                local_sha = local_repo_sha(git_bin, target)
+                if local_sha == remote_sha:
+                    CLONE_PROC = None
+                    log_path.write_text(
+                        f"Repository is already current.\nLocal HEAD: {local_sha}\nGitHub HEAD: {remote_sha}\n",
+                        encoding="utf-8",
+                    )
+                    await logs.add("INFO", f"GitHub clone skipped; Downloads repo is already current: {target}")
+                    return {
+                        "ok": True,
+                        "message": "Downloads repo is already current",
+                        "repo_url": GITHUB_REPO_URL,
+                        "target": str(target),
+                        "log": str(log_path),
+                        "local_head": local_sha,
+                        "github_head": remote_sha,
+                        "current": True,
+                    }
+
+            shutil.rmtree(target)
+            await logs.add(
+                "WARN",
+                (
+                    "Downloads repo was missing, older, or not comparable and was removed "
+                    f"before re-clone: {local_sha or 'none'} -> {remote_sha}"
+                )
+            )
+
+        log_file = log_path.open("wb")
+        log_file.write(
+            (
+                f"GitHub HEAD: {remote_sha}\n"
+                f"Local HEAD: {local_sha or 'none'}\n"
+                f"Cloning because the Downloads folder is missing or older than GitHub.\n"
+            ).encode("utf-8")
+        )
+        log_file.flush()
+        try:
+            CLONE_PROC = subprocess.Popen(
+                [git_bin, "clone", "--progress", GITHUB_REPO_URL, str(target)],
+                cwd=str(target.parent),
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        finally:
+            log_file.close()
+        await logs.add("INFO", f"GitHub clone requested from web UI: {GITHUB_REPO_URL} -> {target}")
+        return {
+            "ok": True,
+            "message": "GitHub clone started",
+            "repo_url": GITHUB_REPO_URL,
+            "target": str(target),
+            "log": str(log_path),
+            "pid": CLONE_PROC.pid,
+            "local_head": local_sha,
+            "github_head": remote_sha,
+            "current": False,
+        }
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/repo/clone/status")
+async def api_clone_repo_status(request: Request):
+    if not auth_ok(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    try:
+        target = REPO_CLONE_TARGET.expanduser()
+        log_path = REPO_CLONE_LOG.expanduser()
+        text = ""
+        if log_path.exists():
+            text = log_path.read_text(encoding="utf-8", errors="replace")
+
+        returncode = CLONE_PROC.poll() if CLONE_PROC else None
+        running = CLONE_PROC is not None and returncode is None
+
+        stage = "Waiting"
+        percent = 0
+        download_percent = None
+        for match in _GIT_PROGRESS_RE.finditer(text):
+            stage = match.group(1)
+            value = max(0, min(int(match.group(2)), 100))
+            if stage == "Receiving objects":
+                download_percent = value
+            percent = value
+
+        if download_percent is not None:
+            percent = download_percent
+            stage = "Receiving objects"
+        elif "Resolving deltas" in text:
+            percent = 100
+            stage = "Download complete; resolving deltas"
+        elif "Repository is already current." in text:
+            percent = 100
+            stage = "Already current"
+        elif "Cloning into" in text:
+            stage = "Starting download"
+
+        complete = target.exists() and (
+            (returncode == 0)
+            or ("done." in text and not running)
+            or ("Repository is already current." in text)
+        )
+        failed = returncode is not None and returncode != 0
+        if complete:
+            percent = 100
+            if "done." in text or "Resolving deltas" in text:
+                stage = "Complete"
+        elif failed:
+            stage = "Clone failed"
+
+        tail = text[-4000:] if text else ""
+        return {
+            "ok": True,
+            "target": str(target),
+            "log": str(log_path),
+            "stage": stage,
+            "percent": percent,
+            "running": running,
+            "complete": complete,
+            "failed": failed,
+            "log_tail": tail,
+        }
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
