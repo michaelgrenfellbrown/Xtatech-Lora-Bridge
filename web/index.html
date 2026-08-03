@@ -200,7 +200,13 @@ function renderStatus(j) {
 }
 
 function buildNodeRows(nodes) {
-  if (nodes.length) return nodes;
+  const sortByNodeId = (items) => [...items].sort((a, b) => {
+    const left = String(a.node_id || '');
+    const right = String(b.node_id || '');
+    return left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  if (nodes.length) return sortByNodeId(nodes);
 
   const byNode = new Map();
   for (const pkt of payloadBuffer) {
@@ -215,7 +221,7 @@ function buildNodeRows(nodes) {
       });
     }
   }
-  return [...byNode.values()].sort((a, b) => Number(b.last_seen_ts || 0) - Number(a.last_seen_ts || 0));
+  return sortByNodeId(byNode.values());
 }
 
 function renderNodeRows(nodes) {
