@@ -28,7 +28,7 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 WEB_DIR = BASE_DIR / "web"
 # Systemd unit name; must match install.sh (xtatech-lora-bridge.service)
 SERVICE_NAME = "xtatech-lora-bridge.service"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 GITHUB_REPO_URL = "https://github.com/michaelgrenfellbrown/Xtatech-Lora-Bridge.git"
 REPO_CLONE_TARGET = Path.home() / "Downloads" / "Xtatech Lora Bridge"
 REPO_CLONE_LOG = Path.home() / "Downloads" / "xtatech-lora-bridge-clone.log"
@@ -892,6 +892,8 @@ class DiscoveryPublisher:
             ("bat", "Battery", "V", "voltage", "measurement", "bat"),
             ("temp", "Temperature", "°C", "temperature", "measurement", "temp"),
             ("humi", "Humidity", "%", "humidity", "measurement", "humi"),
+            ("eco2", "eCO2", "ppm", "carbon_dioxide", "measurement", "eco2"),
+            ("lux", "Illuminance", "lx", "illuminance", "measurement", "lux"),
             ("ph", "pH", "pH", None, "measurement", "PH"),
             ("sleep", "Sleep", "s", None, "measurement", "SLEEP"),
             ("count", "Count", None, None, "total_increasing", "COUNT"),
