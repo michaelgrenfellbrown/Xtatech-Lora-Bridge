@@ -9,7 +9,68 @@
 # State topics match the bridge default:
 #   lora/<node_id>/state
 
+binary_sensor:
+  - name: "pi-zero2-gw01 MQTT Connected"
+    unique_id: "lora_gateway_pi-zero2-gw01_mqtt_connected"
+    default_entity_id: "binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_mqtt_connected"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ 'ON' if value_json.mqtt_connected | default(false) else 'OFF' }}"
+    device: &device_gateway_pi_zero2_gw01
+      identifiers:
+        - "lora_gateway_pi-zero2-gw01"
+      name: "LoRa Gateway pi-zero2-gw01"
+      manufacturer: "Xtatech"
+      model: "Raspberry Pi Gateway"
+  - name: "pi-zero2-gw01 Serial OK"
+    unique_id: "lora_gateway_pi-zero2-gw01_serial_ok"
+    default_entity_id: "binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_serial_ok"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ 'ON' if value_json.serial_ok | default(false) else 'OFF' }}"
+    device: *device_gateway_pi_zero2_gw01
+
 sensor:
+  - name: "pi-zero2-gw01 Heartbeat"
+    unique_id: "lora_gateway_pi-zero2-gw01_heartbeat"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_heartbeat"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.heartbeat_iso | default(None) }}"
+    device_class: timestamp
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 Uptime"
+    unique_id: "lora_gateway_pi-zero2-gw01_uptime"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_uptime"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.uptime_s | default(None) }}"
+    state_class: measurement
+    unit_of_measurement: "s"
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 IP"
+    unique_id: "lora_gateway_pi-zero2-gw01_ip"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_ip"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.ip | default(None) }}"
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 Last Serial RX"
+    unique_id: "lora_gateway_pi-zero2-gw01_last_serial_rx"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_last_serial_rx"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.last_serial_rx_iso | default(None) }}"
+    device_class: timestamp
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 Nodes Seen"
+    unique_id: "lora_gateway_pi-zero2-gw01_nodes_seen"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_nodes_seen"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.nodes_seen | default(None) }}"
+    state_class: measurement
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 Last Serial Error"
+    unique_id: "lora_gateway_pi-zero2-gw01_last_serial_error"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_last_serial_error"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.last_serial_error | default(None) }}"
+    device: *device_gateway_pi_zero2_gw01
+
   - name: "aqia01 Battery"
     unique_id: "lora_aqia01_bat"
     default_entity_id: "sensor.lora_aqia01_aqia01_battery"

@@ -41,6 +41,22 @@ NODES = [
     ("Aqua101", "aqua101", "LoRa Above Ground Sensor Node", ABOVE_GROUND_FIELDS),
 ]
 
+GATEWAY_ID = "pi-zero2-gw01"
+GATEWAY_STATE_TOPIC = f"lora/_gateway/{GATEWAY_ID}/state"
+GATEWAY_ENTITY_PREFIX = "lora_gateway_pi_zero2_gw01_pi_zero2_gw01"
+GATEWAY_BINARY_SENSORS = [
+    ("MQTT Connected", "mqtt_connected", "mqtt_connected"),
+    ("Serial OK", "serial_ok", "serial_ok"),
+]
+GATEWAY_SENSORS = [
+    ("Heartbeat", "heartbeat", "heartbeat_iso", "timestamp", None, None),
+    ("Uptime", "uptime", "uptime_s", None, "measurement", "s"),
+    ("IP", "ip", "ip", None, None, None),
+    ("Last Serial RX", "last_serial_rx", "last_serial_rx_iso", "timestamp", None, None),
+    ("Nodes Seen", "nodes_seen", "nodes_seen", None, "measurement", None),
+    ("Last Serial Error", "last_serial_error", "last_serial_error", None, None, None),
+]
+
 
 def build_yaml() -> str:
     lines = [
@@ -55,8 +71,16 @@ def build_yaml() -> str:
         "# State topics match the bridge default:",
         "#   lora/<node_id>/state",
         "",
-        "sensor:",
+        "binary_sensor:",
     ]
+
+    append_gateway_binary_sensors(lines)
+    lines.extend([
+        "",
+        "sensor:",
+    ])
+    append_gateway_sensors(lines)
+    lines.append("")
 
     for node_index, (node, entity_node, model, fields) in enumerate(NODES):
         node_slug = node.lower()
@@ -90,6 +114,44 @@ def build_yaml() -> str:
                 lines.append(f"    device: *{anchor}")
 
     return "\n".join(lines) + "\n"
+
+
+def append_gateway_device(lines: list[str]) -> None:
+    lines.append("    device: &device_gateway_pi_zero2_gw01")
+    lines.append("      identifiers:")
+    lines.append(f'        - "lora_gateway_{GATEWAY_ID}"')
+    lines.append(f'      name: "LoRa Gateway {GATEWAY_ID}"')
+    lines.append('      manufacturer: "Xtatech"')
+    lines.append('      model: "Raspberry Pi Gateway"')
+
+
+def append_gateway_binary_sensors(lines: list[str]) -> None:
+    for index, (label, suffix, json_key) in enumerate(GATEWAY_BINARY_SENSORS):
+        lines.append(f'  - name: "{GATEWAY_ID} {label}"')
+        lines.append(f'    unique_id: "lora_gateway_{GATEWAY_ID}_{suffix}"')
+        lines.append(f'    default_entity_id: "binary_sensor.{GATEWAY_ENTITY_PREFIX}_{suffix}"')
+        lines.append(f'    state_topic: "{GATEWAY_STATE_TOPIC}"')
+        lines.append(f'    value_template: "{{{{ \'ON\' if value_json.{json_key} | default(false) else \'OFF\' }}}}"')
+        if index == 0:
+            append_gateway_device(lines)
+        else:
+            lines.append("    device: *device_gateway_pi_zero2_gw01")
+
+
+def append_gateway_sensors(lines: list[str]) -> None:
+    for label, suffix, json_key, devcls, stcls, unit in GATEWAY_SENSORS:
+        lines.append(f'  - name: "{GATEWAY_ID} {label}"')
+        lines.append(f'    unique_id: "lora_gateway_{GATEWAY_ID}_{suffix}"')
+        lines.append(f'    default_entity_id: "sensor.{GATEWAY_ENTITY_PREFIX}_{suffix}"')
+        lines.append(f'    state_topic: "{GATEWAY_STATE_TOPIC}"')
+        lines.append(f'    value_template: "{{{{ value_json.{json_key} | default(None) }}}}"')
+        if devcls:
+            lines.append(f"    device_class: {devcls}")
+        if stcls:
+            lines.append(f"    state_class: {stcls}")
+        if unit:
+            lines.append(f'    unit_of_measurement: "{unit}"')
+        lines.append("    device: *device_gateway_pi_zero2_gw01")
 
 
 if __name__ == "__main__":
