@@ -16,7 +16,7 @@ mqtt:
   gateway_id: "pi-zero2-gw01"
 
   discovery:
-    enabled: true
+    enabled: false
     prefix: "homeassistant"
     expire_after_s: 7200
     republish_interval_s: 3600

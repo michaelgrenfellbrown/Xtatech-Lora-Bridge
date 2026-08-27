@@ -28,7 +28,7 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 WEB_DIR = BASE_DIR / "web"
 # Systemd unit name; must match install.sh (xtatech-lora-bridge.service)
 SERVICE_NAME = "xtatech-lora-bridge.service"
-APP_VERSION = "2.0.1"
+APP_VERSION = "2.0.2"
 GITHUB_REPO_URL = "https://github.com/michaelgrenfellbrown/Xtatech-Lora-Bridge.git"
 REPO_CLONE_TARGET = Path.home() / "Downloads" / "Xtatech Lora Bridge"
 REPO_CLONE_LOG = Path.home() / "Downloads" / "xtatech-lora-bridge-clone.log"
