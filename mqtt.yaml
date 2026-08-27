@@ -9,73 +9,124 @@
 # State topics match the bridge default:
 #   lora/<node_id>/state
 
+binary_sensor:
+  - name: "pi-zero2-gw01 MQTT Connected"
+    unique_id: "lora_gateway_pi-zero2-gw01_mqtt_connected"
+    default_entity_id: "binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_mqtt_connected"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ iif(value_json.mqtt_connected, 'ON', 'OFF') }}"
+    device: &device_gateway_pi_zero2_gw01
+      identifiers:
+        - "lora_gateway_pi-zero2-gw01"
+      name: "LoRa Gateway pi-zero2-gw01"
+      manufacturer: "Xtatech"
+      model: "Raspberry Pi Gateway"
+  - name: "pi-zero2-gw01 Serial OK"
+    unique_id: "lora_gateway_pi-zero2-gw01_serial_ok"
+    default_entity_id: "binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_serial_ok"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ iif(value_json.serial_ok, 'ON', 'OFF') }}"
+    device: *device_gateway_pi_zero2_gw01
+
 sensor:
-  - name: "aqua01 Battery"
-    unique_id: "lora_aqua01_bat"
-    state_topic: "lora/aqua01/state"
+  - name: "pi-zero2-gw01 Heartbeat"
+    unique_id: "lora_gateway_pi-zero2-gw01_heartbeat"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_heartbeat"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.heartbeat_iso | default(None) }}"
+    device_class: timestamp
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 Uptime"
+    unique_id: "lora_gateway_pi-zero2-gw01_uptime"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_uptime"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.uptime_s | default(None) }}"
+    state_class: measurement
+    unit_of_measurement: "s"
+    device: *device_gateway_pi_zero2_gw01
+  - name: "pi-zero2-gw01 Nodes Seen"
+    unique_id: "lora_gateway_pi-zero2-gw01_nodes_seen"
+    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_nodes_seen"
+    state_topic: "lora/_gateway/pi-zero2-gw01/state"
+    value_template: "{{ value_json.nodes_seen | default(None) }}"
+    state_class: measurement
+    device: *device_gateway_pi_zero2_gw01
+
+  - name: "aqia01 Battery"
+    unique_id: "lora_aqia01_bat"
+    default_entity_id: "sensor.lora_aqia01_aqia01_battery"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
-    device: &device_aqua01
+    device: &device_aqia01
       identifiers:
-        - "lora_aqua01"
-      name: "LoRa aqua01"
+        - "lora_aqia01"
+      name: "LoRa aqia01"
       manufacturer: "Xtatech"
       model: "LoRa Sensor Node"
-  - name: "aqua01 Temperature"
-    unique_id: "lora_aqua01_temp"
-    state_topic: "lora/aqua01/state"
+  - name: "aqia01 Temperature"
+    unique_id: "lora_aqia01_temp"
+    default_entity_id: "sensor.lora_aqia01_aqia01_temperature"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
-    device: *device_aqua01
-  - name: "aqua01 Humidity"
-    unique_id: "lora_aqua01_humi"
-    state_topic: "lora/aqua01/state"
+    device: *device_aqia01
+  - name: "aqia01 Humidity"
+    unique_id: "lora_aqia01_humi"
+    default_entity_id: "sensor.lora_aqia01_aqia01_humidity"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
-    device: *device_aqua01
-  - name: "aqua01 pH"
-    unique_id: "lora_aqua01_ph"
-    state_topic: "lora/aqua01/state"
+    device: *device_aqia01
+  - name: "aqia01 pH"
+    unique_id: "lora_aqia01_ph"
+    default_entity_id: "sensor.lora_aqia01_aqia01_ph"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
     unit_of_measurement: "pH"
-    device: *device_aqua01
-  - name: "aqua01 Sleep"
-    unique_id: "lora_aqua01_sleep"
-    state_topic: "lora/aqua01/state"
+    device: *device_aqia01
+  - name: "aqia01 Sleep"
+    unique_id: "lora_aqia01_sleep"
+    default_entity_id: "sensor.lora_aqia01_aqia01_sleep"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
     unit_of_measurement: "s"
-    device: *device_aqua01
-  - name: "aqua01 Count"
-    unique_id: "lora_aqua01_count"
-    state_topic: "lora/aqua01/state"
+    device: *device_aqia01
+  - name: "aqia01 Count"
+    unique_id: "lora_aqia01_count"
+    default_entity_id: "sensor.lora_aqia01_aqia01_count"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
-    device: *device_aqua01
-  - name: "aqua01 RSSI"
-    unique_id: "lora_aqua01_rssi"
-    state_topic: "lora/aqua01/state"
+    device: *device_aqia01
+  - name: "aqia01 RSSI"
+    unique_id: "lora_aqia01_rssi"
+    default_entity_id: "sensor.lora_aqia01_aqia01_rssi"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
-    device: *device_aqua01
-  - name: "aqua01 Last Seen"
-    unique_id: "lora_aqua01_last_seen"
-    state_topic: "lora/aqua01/state"
+    device: *device_aqia01
+  - name: "aqia01 Last Seen"
+    unique_id: "lora_aqia01_last_seen"
+    default_entity_id: "sensor.lora_aqia01_aqia01_last_seen"
+    state_topic: "lora/aqia01/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
-    device: *device_aqua01
+    device: *device_aqia01
 
   - name: "aqua02 Battery"
     unique_id: "lora_aqua02_bat"
+    default_entity_id: "sensor.lora_aqua02_aqua02_battery"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -89,6 +140,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua02 Temperature"
     unique_id: "lora_aqua02_temp"
+    default_entity_id: "sensor.lora_aqua02_aqua02_temperature"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -97,6 +149,7 @@ sensor:
     device: *device_aqua02
   - name: "aqua02 Humidity"
     unique_id: "lora_aqua02_humi"
+    default_entity_id: "sensor.lora_aqua02_aqua02_humidity"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -105,6 +158,7 @@ sensor:
     device: *device_aqua02
   - name: "aqua02 pH"
     unique_id: "lora_aqua02_ph"
+    default_entity_id: "sensor.lora_aqua02_aqua02_ph"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -112,6 +166,7 @@ sensor:
     device: *device_aqua02
   - name: "aqua02 Sleep"
     unique_id: "lora_aqua02_sleep"
+    default_entity_id: "sensor.lora_aqua02_aqua02_sleep"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -119,12 +174,14 @@ sensor:
     device: *device_aqua02
   - name: "aqua02 Count"
     unique_id: "lora_aqua02_count"
+    default_entity_id: "sensor.lora_aqua02_aqua02_count"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua02
   - name: "aqua02 RSSI"
     unique_id: "lora_aqua02_rssi"
+    default_entity_id: "sensor.lora_aqua02_aqua02_rssi"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -133,6 +190,7 @@ sensor:
     device: *device_aqua02
   - name: "aqua02 Last Seen"
     unique_id: "lora_aqua02_last_seen"
+    default_entity_id: "sensor.lora_aqua02_aqua02_last_seen"
     state_topic: "lora/aqua02/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -140,6 +198,7 @@ sensor:
 
   - name: "aqua03 Battery"
     unique_id: "lora_aqua03_bat"
+    default_entity_id: "sensor.lora_aqua03_aqua03_battery"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -153,6 +212,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua03 Temperature"
     unique_id: "lora_aqua03_temp"
+    default_entity_id: "sensor.lora_aqua03_aqua03_temperature"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -161,6 +221,7 @@ sensor:
     device: *device_aqua03
   - name: "aqua03 Humidity"
     unique_id: "lora_aqua03_humi"
+    default_entity_id: "sensor.lora_aqua03_aqua03_humidity"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -169,6 +230,7 @@ sensor:
     device: *device_aqua03
   - name: "aqua03 pH"
     unique_id: "lora_aqua03_ph"
+    default_entity_id: "sensor.lora_aqua03_aqua03_ph"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -176,6 +238,7 @@ sensor:
     device: *device_aqua03
   - name: "aqua03 Sleep"
     unique_id: "lora_aqua03_sleep"
+    default_entity_id: "sensor.lora_aqua03_aqua03_sleep"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -183,12 +246,14 @@ sensor:
     device: *device_aqua03
   - name: "aqua03 Count"
     unique_id: "lora_aqua03_count"
+    default_entity_id: "sensor.lora_aqua03_aqua03_count"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua03
   - name: "aqua03 RSSI"
     unique_id: "lora_aqua03_rssi"
+    default_entity_id: "sensor.lora_aqua03_aqua03_rssi"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -197,6 +262,7 @@ sensor:
     device: *device_aqua03
   - name: "aqua03 Last Seen"
     unique_id: "lora_aqua03_last_seen"
+    default_entity_id: "sensor.lora_aqua03_aqua03_last_seen"
     state_topic: "lora/aqua03/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -204,6 +270,7 @@ sensor:
 
   - name: "aqua04 Battery"
     unique_id: "lora_aqua04_bat"
+    default_entity_id: "sensor.lora_aqua04_aqua04_battery"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -217,6 +284,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua04 Temperature"
     unique_id: "lora_aqua04_temp"
+    default_entity_id: "sensor.lora_aqua04_aqua04_temperature"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -225,6 +293,7 @@ sensor:
     device: *device_aqua04
   - name: "aqua04 Humidity"
     unique_id: "lora_aqua04_humi"
+    default_entity_id: "sensor.lora_aqua04_aqua04_humidity"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -233,6 +302,7 @@ sensor:
     device: *device_aqua04
   - name: "aqua04 pH"
     unique_id: "lora_aqua04_ph"
+    default_entity_id: "sensor.lora_aqua04_aqua04_ph"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -240,6 +310,7 @@ sensor:
     device: *device_aqua04
   - name: "aqua04 Sleep"
     unique_id: "lora_aqua04_sleep"
+    default_entity_id: "sensor.lora_aqua04_aqua04_sleep"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -247,12 +318,14 @@ sensor:
     device: *device_aqua04
   - name: "aqua04 Count"
     unique_id: "lora_aqua04_count"
+    default_entity_id: "sensor.lora_aqua04_aqua04_count"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua04
   - name: "aqua04 RSSI"
     unique_id: "lora_aqua04_rssi"
+    default_entity_id: "sensor.lora_aqua04_aqua04_rssi"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -261,6 +334,7 @@ sensor:
     device: *device_aqua04
   - name: "aqua04 Last Seen"
     unique_id: "lora_aqua04_last_seen"
+    default_entity_id: "sensor.lora_aqua04_aqua04_last_seen"
     state_topic: "lora/aqua04/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -268,6 +342,7 @@ sensor:
 
   - name: "aqua05 Battery"
     unique_id: "lora_aqua05_bat"
+    default_entity_id: "sensor.lora_aqua05_aqua05_battery"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -281,6 +356,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua05 Temperature"
     unique_id: "lora_aqua05_temp"
+    default_entity_id: "sensor.lora_aqua05_aqua05_temperature"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -289,6 +365,7 @@ sensor:
     device: *device_aqua05
   - name: "aqua05 Humidity"
     unique_id: "lora_aqua05_humi"
+    default_entity_id: "sensor.lora_aqua05_aqua05_humidity"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -297,6 +374,7 @@ sensor:
     device: *device_aqua05
   - name: "aqua05 pH"
     unique_id: "lora_aqua05_ph"
+    default_entity_id: "sensor.lora_aqua05_aqua05_ph"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -304,6 +382,7 @@ sensor:
     device: *device_aqua05
   - name: "aqua05 Sleep"
     unique_id: "lora_aqua05_sleep"
+    default_entity_id: "sensor.lora_aqua05_aqua05_sleep"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -311,12 +390,14 @@ sensor:
     device: *device_aqua05
   - name: "aqua05 Count"
     unique_id: "lora_aqua05_count"
+    default_entity_id: "sensor.lora_aqua05_aqua05_count"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua05
   - name: "aqua05 RSSI"
     unique_id: "lora_aqua05_rssi"
+    default_entity_id: "sensor.lora_aqua05_aqua05_rssi"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -325,6 +406,7 @@ sensor:
     device: *device_aqua05
   - name: "aqua05 Last Seen"
     unique_id: "lora_aqua05_last_seen"
+    default_entity_id: "sensor.lora_aqua05_aqua05_last_seen"
     state_topic: "lora/aqua05/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -332,6 +414,7 @@ sensor:
 
   - name: "aqua06 Battery"
     unique_id: "lora_aqua06_bat"
+    default_entity_id: "sensor.lora_aqua06_aqua06_battery"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -345,6 +428,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua06 Temperature"
     unique_id: "lora_aqua06_temp"
+    default_entity_id: "sensor.lora_aqua06_aqua06_temperature"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -353,6 +437,7 @@ sensor:
     device: *device_aqua06
   - name: "aqua06 Humidity"
     unique_id: "lora_aqua06_humi"
+    default_entity_id: "sensor.lora_aqua06_aqua06_humidity"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -361,6 +446,7 @@ sensor:
     device: *device_aqua06
   - name: "aqua06 pH"
     unique_id: "lora_aqua06_ph"
+    default_entity_id: "sensor.lora_aqua06_aqua06_ph"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -368,6 +454,7 @@ sensor:
     device: *device_aqua06
   - name: "aqua06 Sleep"
     unique_id: "lora_aqua06_sleep"
+    default_entity_id: "sensor.lora_aqua06_aqua06_sleep"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -375,12 +462,14 @@ sensor:
     device: *device_aqua06
   - name: "aqua06 Count"
     unique_id: "lora_aqua06_count"
+    default_entity_id: "sensor.lora_aqua06_aqua06_count"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua06
   - name: "aqua06 RSSI"
     unique_id: "lora_aqua06_rssi"
+    default_entity_id: "sensor.lora_aqua06_aqua06_rssi"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -389,6 +478,7 @@ sensor:
     device: *device_aqua06
   - name: "aqua06 Last Seen"
     unique_id: "lora_aqua06_last_seen"
+    default_entity_id: "sensor.lora_aqua06_aqua06_last_seen"
     state_topic: "lora/aqua06/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -396,6 +486,7 @@ sensor:
 
   - name: "aqua07 Battery"
     unique_id: "lora_aqua07_bat"
+    default_entity_id: "sensor.lora_aqua07_aqua07_battery"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -409,6 +500,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua07 Temperature"
     unique_id: "lora_aqua07_temp"
+    default_entity_id: "sensor.lora_aqua07_aqua07_temperature"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -417,6 +509,7 @@ sensor:
     device: *device_aqua07
   - name: "aqua07 Humidity"
     unique_id: "lora_aqua07_humi"
+    default_entity_id: "sensor.lora_aqua07_aqua07_humidity"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -425,6 +518,7 @@ sensor:
     device: *device_aqua07
   - name: "aqua07 pH"
     unique_id: "lora_aqua07_ph"
+    default_entity_id: "sensor.lora_aqua07_aqua07_ph"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -432,6 +526,7 @@ sensor:
     device: *device_aqua07
   - name: "aqua07 Sleep"
     unique_id: "lora_aqua07_sleep"
+    default_entity_id: "sensor.lora_aqua07_aqua07_sleep"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -439,12 +534,14 @@ sensor:
     device: *device_aqua07
   - name: "aqua07 Count"
     unique_id: "lora_aqua07_count"
+    default_entity_id: "sensor.lora_aqua07_aqua07_count"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua07
   - name: "aqua07 RSSI"
     unique_id: "lora_aqua07_rssi"
+    default_entity_id: "sensor.lora_aqua07_aqua07_rssi"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -453,6 +550,7 @@ sensor:
     device: *device_aqua07
   - name: "aqua07 Last Seen"
     unique_id: "lora_aqua07_last_seen"
+    default_entity_id: "sensor.lora_aqua07_aqua07_last_seen"
     state_topic: "lora/aqua07/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -460,6 +558,7 @@ sensor:
 
   - name: "aqua08 Battery"
     unique_id: "lora_aqua08_bat"
+    default_entity_id: "sensor.lora_aqua08_aqua08_battery"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -473,6 +572,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua08 Temperature"
     unique_id: "lora_aqua08_temp"
+    default_entity_id: "sensor.lora_aqua08_aqua08_temperature"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -481,6 +581,7 @@ sensor:
     device: *device_aqua08
   - name: "aqua08 Humidity"
     unique_id: "lora_aqua08_humi"
+    default_entity_id: "sensor.lora_aqua08_aqua08_humidity"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -489,6 +590,7 @@ sensor:
     device: *device_aqua08
   - name: "aqua08 pH"
     unique_id: "lora_aqua08_ph"
+    default_entity_id: "sensor.lora_aqua08_aqua08_ph"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -496,6 +598,7 @@ sensor:
     device: *device_aqua08
   - name: "aqua08 Sleep"
     unique_id: "lora_aqua08_sleep"
+    default_entity_id: "sensor.lora_aqua08_aqua08_sleep"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -503,12 +606,14 @@ sensor:
     device: *device_aqua08
   - name: "aqua08 Count"
     unique_id: "lora_aqua08_count"
+    default_entity_id: "sensor.lora_aqua08_aqua08_count"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua08
   - name: "aqua08 RSSI"
     unique_id: "lora_aqua08_rssi"
+    default_entity_id: "sensor.lora_aqua08_aqua08_rssi"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -517,6 +622,7 @@ sensor:
     device: *device_aqua08
   - name: "aqua08 Last Seen"
     unique_id: "lora_aqua08_last_seen"
+    default_entity_id: "sensor.lora_aqua08_aqua08_last_seen"
     state_topic: "lora/aqua08/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -524,6 +630,7 @@ sensor:
 
   - name: "aqua09 Battery"
     unique_id: "lora_aqua09_bat"
+    default_entity_id: "sensor.lora_aqua09_aqua09_battery"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -537,6 +644,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua09 Temperature"
     unique_id: "lora_aqua09_temp"
+    default_entity_id: "sensor.lora_aqua09_aqua09_temperature"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -545,6 +653,7 @@ sensor:
     device: *device_aqua09
   - name: "aqua09 Humidity"
     unique_id: "lora_aqua09_humi"
+    default_entity_id: "sensor.lora_aqua09_aqua09_humidity"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -553,6 +662,7 @@ sensor:
     device: *device_aqua09
   - name: "aqua09 pH"
     unique_id: "lora_aqua09_ph"
+    default_entity_id: "sensor.lora_aqua09_aqua09_ph"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -560,6 +670,7 @@ sensor:
     device: *device_aqua09
   - name: "aqua09 Sleep"
     unique_id: "lora_aqua09_sleep"
+    default_entity_id: "sensor.lora_aqua09_aqua09_sleep"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -567,12 +678,14 @@ sensor:
     device: *device_aqua09
   - name: "aqua09 Count"
     unique_id: "lora_aqua09_count"
+    default_entity_id: "sensor.lora_aqua09_aqua09_count"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua09
   - name: "aqua09 RSSI"
     unique_id: "lora_aqua09_rssi"
+    default_entity_id: "sensor.lora_aqua09_aqua09_rssi"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -581,6 +694,7 @@ sensor:
     device: *device_aqua09
   - name: "aqua09 Last Seen"
     unique_id: "lora_aqua09_last_seen"
+    default_entity_id: "sensor.lora_aqua09_aqua09_last_seen"
     state_topic: "lora/aqua09/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -588,6 +702,7 @@ sensor:
 
   - name: "aqua010 Battery"
     unique_id: "lora_aqua010_bat"
+    default_entity_id: "sensor.lora_aqua010_aqua010_battery"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -601,6 +716,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua010 Temperature"
     unique_id: "lora_aqua010_temp"
+    default_entity_id: "sensor.lora_aqua010_aqua010_temperature"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -609,6 +725,7 @@ sensor:
     device: *device_aqua010
   - name: "aqua010 Humidity"
     unique_id: "lora_aqua010_humi"
+    default_entity_id: "sensor.lora_aqua010_aqua010_humidity"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -617,6 +734,7 @@ sensor:
     device: *device_aqua010
   - name: "aqua010 pH"
     unique_id: "lora_aqua010_ph"
+    default_entity_id: "sensor.lora_aqua010_aqua010_ph"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -624,6 +742,7 @@ sensor:
     device: *device_aqua010
   - name: "aqua010 Sleep"
     unique_id: "lora_aqua010_sleep"
+    default_entity_id: "sensor.lora_aqua010_aqua010_sleep"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -631,12 +750,14 @@ sensor:
     device: *device_aqua010
   - name: "aqua010 Count"
     unique_id: "lora_aqua010_count"
+    default_entity_id: "sensor.lora_aqua010_aqua010_count"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua010
   - name: "aqua010 RSSI"
     unique_id: "lora_aqua010_rssi"
+    default_entity_id: "sensor.lora_aqua010_aqua010_rssi"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -645,6 +766,7 @@ sensor:
     device: *device_aqua010
   - name: "aqua010 Last Seen"
     unique_id: "lora_aqua010_last_seen"
+    default_entity_id: "sensor.lora_aqua010_aqua010_last_seen"
     state_topic: "lora/aqua010/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -652,6 +774,7 @@ sensor:
 
   - name: "aqua011 Battery"
     unique_id: "lora_aqua011_bat"
+    default_entity_id: "sensor.lora_aqua011_aqua011_battery"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -665,6 +788,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua011 Temperature"
     unique_id: "lora_aqua011_temp"
+    default_entity_id: "sensor.lora_aqua011_aqua011_temperature"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -673,6 +797,7 @@ sensor:
     device: *device_aqua011
   - name: "aqua011 Humidity"
     unique_id: "lora_aqua011_humi"
+    default_entity_id: "sensor.lora_aqua011_aqua011_humidity"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -681,6 +806,7 @@ sensor:
     device: *device_aqua011
   - name: "aqua011 pH"
     unique_id: "lora_aqua011_ph"
+    default_entity_id: "sensor.lora_aqua011_aqua011_ph"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -688,6 +814,7 @@ sensor:
     device: *device_aqua011
   - name: "aqua011 Sleep"
     unique_id: "lora_aqua011_sleep"
+    default_entity_id: "sensor.lora_aqua011_aqua011_sleep"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -695,12 +822,14 @@ sensor:
     device: *device_aqua011
   - name: "aqua011 Count"
     unique_id: "lora_aqua011_count"
+    default_entity_id: "sensor.lora_aqua011_aqua011_count"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua011
   - name: "aqua011 RSSI"
     unique_id: "lora_aqua011_rssi"
+    default_entity_id: "sensor.lora_aqua011_aqua011_rssi"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -709,77 +838,87 @@ sensor:
     device: *device_aqua011
   - name: "aqua011 Last Seen"
     unique_id: "lora_aqua011_last_seen"
+    default_entity_id: "sensor.lora_aqua011_aqua011_last_seen"
     state_topic: "lora/aqua011/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
     device: *device_aqua011
 
-  - name: "aqua012 Battery"
-    unique_id: "lora_aqua012_bat"
-    state_topic: "lora/aqua012/state"
+  - name: "aqua12 Battery"
+    unique_id: "lora_aqua12_bat"
+    default_entity_id: "sensor.lora_aqua12_aqua12_battery"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
-    device: &device_aqua012
+    device: &device_aqua12
       identifiers:
-        - "lora_aqua012"
-      name: "LoRa aqua012"
+        - "lora_aqua12"
+      name: "LoRa aqua12"
       manufacturer: "Xtatech"
       model: "LoRa Sensor Node"
-  - name: "aqua012 Temperature"
-    unique_id: "lora_aqua012_temp"
-    state_topic: "lora/aqua012/state"
+  - name: "aqua12 Temperature"
+    unique_id: "lora_aqua12_temp"
+    default_entity_id: "sensor.lora_aqua12_aqua12_temperature"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
-    device: *device_aqua012
-  - name: "aqua012 Humidity"
-    unique_id: "lora_aqua012_humi"
-    state_topic: "lora/aqua012/state"
+    device: *device_aqua12
+  - name: "aqua12 Humidity"
+    unique_id: "lora_aqua12_humi"
+    default_entity_id: "sensor.lora_aqua12_aqua12_humidity"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
-    device: *device_aqua012
-  - name: "aqua012 pH"
-    unique_id: "lora_aqua012_ph"
-    state_topic: "lora/aqua012/state"
+    device: *device_aqua12
+  - name: "aqua12 pH"
+    unique_id: "lora_aqua12_ph"
+    default_entity_id: "sensor.lora_aqua12_aqua12_ph"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
     unit_of_measurement: "pH"
-    device: *device_aqua012
-  - name: "aqua012 Sleep"
-    unique_id: "lora_aqua012_sleep"
-    state_topic: "lora/aqua012/state"
+    device: *device_aqua12
+  - name: "aqua12 Sleep"
+    unique_id: "lora_aqua12_sleep"
+    default_entity_id: "sensor.lora_aqua12_aqua12_sleep"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
     unit_of_measurement: "s"
-    device: *device_aqua012
-  - name: "aqua012 Count"
-    unique_id: "lora_aqua012_count"
-    state_topic: "lora/aqua012/state"
+    device: *device_aqua12
+  - name: "aqua12 Count"
+    unique_id: "lora_aqua12_count"
+    default_entity_id: "sensor.lora_aqua12_aqua12_count"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
-    device: *device_aqua012
-  - name: "aqua012 RSSI"
-    unique_id: "lora_aqua012_rssi"
-    state_topic: "lora/aqua012/state"
+    device: *device_aqua12
+  - name: "aqua12 RSSI"
+    unique_id: "lora_aqua12_rssi"
+    default_entity_id: "sensor.lora_aqua12_aqua12_rssi"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
-    device: *device_aqua012
-  - name: "aqua012 Last Seen"
-    unique_id: "lora_aqua012_last_seen"
-    state_topic: "lora/aqua012/state"
+    device: *device_aqua12
+  - name: "aqua12 Last Seen"
+    unique_id: "lora_aqua12_last_seen"
+    default_entity_id: "sensor.lora_aqua12_aqua12_last_seen"
+    state_topic: "lora/aqua12/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
-    device: *device_aqua012
+    device: *device_aqua12
 
   - name: "aqua013 Battery"
     unique_id: "lora_aqua013_bat"
+    default_entity_id: "sensor.lora_aqua013_aqua013_battery"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -793,6 +932,7 @@ sensor:
       model: "LoRa Sensor Node"
   - name: "aqua013 Temperature"
     unique_id: "lora_aqua013_temp"
+    default_entity_id: "sensor.lora_aqua013_aqua013_temperature"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -801,6 +941,7 @@ sensor:
     device: *device_aqua013
   - name: "aqua013 Humidity"
     unique_id: "lora_aqua013_humi"
+    default_entity_id: "sensor.lora_aqua013_aqua013_humidity"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -809,6 +950,7 @@ sensor:
     device: *device_aqua013
   - name: "aqua013 pH"
     unique_id: "lora_aqua013_ph"
+    default_entity_id: "sensor.lora_aqua013_aqua013_ph"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
@@ -816,6 +958,7 @@ sensor:
     device: *device_aqua013
   - name: "aqua013 Sleep"
     unique_id: "lora_aqua013_sleep"
+    default_entity_id: "sensor.lora_aqua013_aqua013_sleep"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -823,12 +966,14 @@ sensor:
     device: *device_aqua013
   - name: "aqua013 Count"
     unique_id: "lora_aqua013_count"
+    default_entity_id: "sensor.lora_aqua013_aqua013_count"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua013
   - name: "aqua013 RSSI"
     unique_id: "lora_aqua013_rssi"
+    default_entity_id: "sensor.lora_aqua013_aqua013_rssi"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -837,6 +982,7 @@ sensor:
     device: *device_aqua013
   - name: "aqua013 Last Seen"
     unique_id: "lora_aqua013_last_seen"
+    default_entity_id: "sensor.lora_aqua013_aqua013_last_seen"
     state_topic: "lora/aqua013/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
@@ -844,6 +990,7 @@ sensor:
 
   - name: "Aqua101 Battery"
     unique_id: "lora_aqua101_bat"
+    default_entity_id: "sensor.lora_aqua101_aqua101_battery"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
@@ -857,6 +1004,7 @@ sensor:
       model: "LoRa Above Ground Sensor Node"
   - name: "Aqua101 Temperature"
     unique_id: "lora_aqua101_temp"
+    default_entity_id: "sensor.lora_aqua101_aqua101_temperature"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
@@ -865,6 +1013,7 @@ sensor:
     device: *device_aqua101
   - name: "Aqua101 Humidity"
     unique_id: "lora_aqua101_humi"
+    default_entity_id: "sensor.lora_aqua101_aqua101_humidity"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
@@ -873,6 +1022,7 @@ sensor:
     device: *device_aqua101
   - name: "Aqua101 eCO2"
     unique_id: "lora_aqua101_eco2"
+    default_entity_id: "sensor.lora_aqua101_aqua101_eco2"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.eco2 | default(None) }}"
     device_class: carbon_dioxide
@@ -881,6 +1031,7 @@ sensor:
     device: *device_aqua101
   - name: "Aqua101 Illuminance"
     unique_id: "lora_aqua101_lux"
+    default_entity_id: "sensor.lora_aqua101_aqua101_illuminance"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.lux | default(None) }}"
     device_class: illuminance
@@ -889,6 +1040,7 @@ sensor:
     device: *device_aqua101
   - name: "Aqua101 Sleep"
     unique_id: "lora_aqua101_sleep"
+    default_entity_id: "sensor.lora_aqua101_aqua101_sleep"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
@@ -896,12 +1048,14 @@ sensor:
     device: *device_aqua101
   - name: "Aqua101 Count"
     unique_id: "lora_aqua101_count"
+    default_entity_id: "sensor.lora_aqua101_aqua101_count"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
     device: *device_aqua101
   - name: "Aqua101 RSSI"
     unique_id: "lora_aqua101_rssi"
+    default_entity_id: "sensor.lora_aqua101_aqua101_rssi"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
@@ -910,6 +1064,7 @@ sensor:
     device: *device_aqua101
   - name: "Aqua101 Last Seen"
     unique_id: "lora_aqua101_last_seen"
+    default_entity_id: "sensor.lora_aqua101_aqua101_last_seen"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
