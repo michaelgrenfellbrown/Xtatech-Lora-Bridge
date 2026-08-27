@@ -9,49 +9,7 @@
 # State topics match the bridge default:
 #   lora/<node_id>/state
 
-binary_sensor:
-  - name: "pi-zero2-gw01 MQTT Connected"
-    unique_id: "lora_gateway_pi-zero2-gw01_mqtt_connected"
-    default_entity_id: "binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_mqtt_connected"
-    state_topic: "lora/_gateway/pi-zero2-gw01/state"
-    value_template: "{{ iif(value_json.mqtt_connected, 'ON', 'OFF') }}"
-    device: &device_gateway_pi_zero2_gw01
-      identifiers:
-        - "lora_gateway_pi-zero2-gw01"
-      name: "LoRa Gateway pi-zero2-gw01"
-      manufacturer: "Xtatech"
-      model: "Raspberry Pi Gateway"
-  - name: "pi-zero2-gw01 Serial OK"
-    unique_id: "lora_gateway_pi-zero2-gw01_serial_ok"
-    default_entity_id: "binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_serial_ok"
-    state_topic: "lora/_gateway/pi-zero2-gw01/state"
-    value_template: "{{ iif(value_json.serial_ok, 'ON', 'OFF') }}"
-    device: *device_gateway_pi_zero2_gw01
-
 sensor:
-  - name: "pi-zero2-gw01 Heartbeat"
-    unique_id: "lora_gateway_pi-zero2-gw01_heartbeat"
-    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_heartbeat"
-    state_topic: "lora/_gateway/pi-zero2-gw01/state"
-    value_template: "{{ value_json.heartbeat_iso | default(None) }}"
-    device_class: timestamp
-    device: *device_gateway_pi_zero2_gw01
-  - name: "pi-zero2-gw01 Uptime"
-    unique_id: "lora_gateway_pi-zero2-gw01_uptime"
-    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_uptime"
-    state_topic: "lora/_gateway/pi-zero2-gw01/state"
-    value_template: "{{ value_json.uptime_s | default(None) }}"
-    state_class: measurement
-    unit_of_measurement: "s"
-    device: *device_gateway_pi_zero2_gw01
-  - name: "pi-zero2-gw01 Nodes Seen"
-    unique_id: "lora_gateway_pi-zero2-gw01_nodes_seen"
-    default_entity_id: "sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_nodes_seen"
-    state_topic: "lora/_gateway/pi-zero2-gw01/state"
-    value_template: "{{ value_json.nodes_seen | default(None) }}"
-    state_class: measurement
-    device: *device_gateway_pi_zero2_gw01
-
   - name: "aqia01 Battery"
     unique_id: "lora_aqia01_bat"
     default_entity_id: "sensor.lora_aqia01_aqia01_battery"
@@ -844,77 +802,77 @@ sensor:
     device_class: timestamp
     device: *device_aqua011
 
-  - name: "aqua12 Battery"
-    unique_id: "lora_aqua12_bat"
+  - name: "aqua012 Battery"
+    unique_id: "lora_aqua012_bat"
     default_entity_id: "sensor.lora_aqua12_aqua12_battery"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.bat | default(None) }}"
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
-    device: &device_aqua12
+    device: &device_aqua012
       identifiers:
-        - "lora_aqua12"
-      name: "LoRa aqua12"
+        - "lora_aqua012"
+      name: "LoRa aqua012"
       manufacturer: "Xtatech"
       model: "LoRa Sensor Node"
-  - name: "aqua12 Temperature"
-    unique_id: "lora_aqua12_temp"
+  - name: "aqua012 Temperature"
+    unique_id: "lora_aqua012_temp"
     default_entity_id: "sensor.lora_aqua12_aqua12_temperature"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.temp | default(None) }}"
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
-    device: *device_aqua12
-  - name: "aqua12 Humidity"
-    unique_id: "lora_aqua12_humi"
+    device: *device_aqua012
+  - name: "aqua012 Humidity"
+    unique_id: "lora_aqua012_humi"
     default_entity_id: "sensor.lora_aqua12_aqua12_humidity"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.humi | default(None) }}"
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
-    device: *device_aqua12
-  - name: "aqua12 pH"
-    unique_id: "lora_aqua12_ph"
+    device: *device_aqua012
+  - name: "aqua012 pH"
+    unique_id: "lora_aqua012_ph"
     default_entity_id: "sensor.lora_aqua12_aqua12_ph"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.PH | default(None) }}"
     state_class: measurement
     unit_of_measurement: "pH"
-    device: *device_aqua12
-  - name: "aqua12 Sleep"
-    unique_id: "lora_aqua12_sleep"
+    device: *device_aqua012
+  - name: "aqua012 Sleep"
+    unique_id: "lora_aqua012_sleep"
     default_entity_id: "sensor.lora_aqua12_aqua12_sleep"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
     state_class: measurement
     unit_of_measurement: "s"
-    device: *device_aqua12
-  - name: "aqua12 Count"
-    unique_id: "lora_aqua12_count"
+    device: *device_aqua012
+  - name: "aqua012 Count"
+    unique_id: "lora_aqua012_count"
     default_entity_id: "sensor.lora_aqua12_aqua12_count"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
     state_class: total_increasing
-    device: *device_aqua12
-  - name: "aqua12 RSSI"
-    unique_id: "lora_aqua12_rssi"
+    device: *device_aqua012
+  - name: "aqua012 RSSI"
+    unique_id: "lora_aqua012_rssi"
     default_entity_id: "sensor.lora_aqua12_aqua12_rssi"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.rssi | default(None) }}"
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
-    device: *device_aqua12
-  - name: "aqua12 Last Seen"
-    unique_id: "lora_aqua12_last_seen"
+    device: *device_aqua012
+  - name: "aqua012 Last Seen"
+    unique_id: "lora_aqua012_last_seen"
     default_entity_id: "sensor.lora_aqua12_aqua12_last_seen"
-    state_topic: "lora/aqua12/state"
+    state_topic: "lora/aqua012/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
     device_class: timestamp
-    device: *device_aqua12
+    device: *device_aqua012
 
   - name: "aqua013 Battery"
     unique_id: "lora_aqua013_bat"

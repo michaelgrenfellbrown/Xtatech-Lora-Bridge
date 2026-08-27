@@ -1,0 +1,838 @@
+decluttering_templates:
+  aqua_node_row:
+    card:
+      type: horizontal-stack
+      card_mod:
+        style: |
+          :host {
+            display: block;
+            margin-bottom: 6px;
+          }
+          #root {
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+      cards:
+        - type: custom:button-card
+          entity: sensor.[[prefix]]_last_seen
+          name: '[[display_name]]'
+          icon: mdi:sprout
+          show_icon: true
+          show_name: true
+          show_state: false
+          tap_action:
+            action: more-info
+          triggers_update:
+            - sensor.[[prefix]]_battery
+            - sensor.[[prefix]]_temperature
+            - sensor.[[prefix]]_humidity
+            - sensor.[[prefix]]_ph
+            - sensor.[[prefix]]_last_seen
+          custom_fields:
+            status: |
+              [[[
+                const e = states['sensor.[[prefix]]_last_seen'];
+                return (!e || ['unknown','unavailable'].includes(e.state))
+                  ? 'OFFLINE' : 'ONLINE';
+              ]]]
+            readings: |
+              [[[
+                const val = (id, suffix = '') => {
+                  const e = states[id];
+                  return (!e || ['unknown','unavailable','none'].includes(e.state))
+                    ? '—' : `${e.state}${suffix}`;
+                };
+                return `
+                  <span><b>Bat</b>&nbsp;${val('sensor.[[prefix]]_battery',' V')}</span>
+                  <span><b>Temp</b>&nbsp;${val('sensor.[[prefix]]_temperature',' °C')}</span>
+                  <span><b>Moist</b>&nbsp;${val('sensor.[[prefix]]_humidity',' %')}</span>
+                  <span><b>pH</b>&nbsp;${val('sensor.[[prefix]]_ph')}</span>
+                `;
+              ]]]
+          state:
+            - operator: template
+              value: |
+                [[[
+                  const e = states['sensor.[[prefix]]_last_seen'];
+                  return !e || ['unknown','unavailable'].includes(e.state);
+                ]]]
+              styles:
+                card:
+                  - opacity: 0.55
+                icon:
+                  - color: var(--error-color)
+                custom_fields:
+                  status:
+                    - color: var(--error-color)
+            - operator: default
+              styles:
+                icon:
+                  - color: var(--success-color)
+                custom_fields:
+                  status:
+                    - color: var(--success-color)
+          styles:
+            card:
+              - height: 58px
+              - padding: 2px 6px
+              - border-radius: 8px
+            grid:
+              - grid-template-areas: '"i n status" "i readings readings"'
+              - grid-template-columns: 28px 72px 1fr
+              - grid-template-rows: 20px 1fr
+              - column-gap: 5px
+            icon:
+              - width: 21px
+            name:
+              - justify-self: start
+              - font-size: 11px
+              - font-weight: 700
+            custom_fields:
+              status:
+                - justify-self: end
+                - font-size: 9px
+                - font-weight: 700
+              readings:
+                - justify-self: stretch
+                - display: flex
+                - flex-wrap: wrap
+                - gap: 2px 8px
+                - font-size: 9px
+                - line-height: 11px
+        - type: custom:mini-graph-card
+          entities:
+            - entity: sensor.[[prefix]]_humidity
+          name: Moist
+          hours_to_show: 24
+          points_per_hour: 1
+          aggregate_func: avg
+          line_width: 2
+          height: 24
+          font_size: 10
+          decimals: 1
+          lower_bound: 0
+          show:
+            icon: false
+            labels: false
+            extrema: false
+            fill: false
+            points: false
+            legend: false
+            name: true
+            state: true
+          card_mod:
+            style: |
+              ha-card {
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                box-sizing: border-box !important;
+                padding: 0 4px !important;
+                border-radius: 8px;
+                overflow: hidden !important;
+              }
+              .graph {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .graph__container {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .header {
+                padding: 0 2px !important;
+                min-height: 18px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+              }
+              .name {
+                font-size: 9px !important;
+                line-height: 10px !important;
+                margin: 0 !important;
+              }
+              .state {
+                font-size: 5px !important;
+                line-height: 6px !important;
+                margin: 0 !important;
+              }
+              .state__uom {
+                font-size: 4px !important;
+              }
+        - type: custom:mini-graph-card
+          entities:
+            - entity: sensor.[[prefix]]_temperature
+          name: Temp
+          hours_to_show: 24
+          points_per_hour: 1
+          aggregate_func: avg
+          line_width: 2
+          height: 24
+          font_size: 28
+          decimals: 1
+          show:
+            icon: false
+            labels: false
+            extrema: false
+            fill: false
+            points: false
+            legend: false
+            name: true
+            state: true
+          card_mod:
+            style: |
+              ha-card {
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                box-sizing: border-box !important;
+                padding: 0 4px !important;
+                border-radius: 8px;
+                overflow: hidden !important;
+              }
+              .graph {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .graph__container {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .header {
+                padding: 0 2px !important;
+                min-height: 18px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+              }
+              .name {
+                font-size: 9px !important;
+                line-height: 10px !important;
+                margin: 0 !important;
+              }
+              .state {
+                font-size: 5px !important;
+                line-height: 6px !important;
+                margin: 0 !important;
+              }
+              .state__uom {
+                font-size: 4px !important;
+              }
+        - type: custom:mini-graph-card
+          entities:
+            - entity: sensor.[[prefix]]_ph
+          name: pH
+          hours_to_show: 24
+          points_per_hour: 1
+          aggregate_func: avg
+          line_width: 2
+          height: 24
+          font_size: 28
+          decimals: 1
+          lower_bound: 0
+          upper_bound: 14
+          show:
+            icon: false
+            labels: false
+            extrema: false
+            fill: false
+            points: false
+            legend: false
+            name: true
+            state: true
+          card_mod:
+            style: |
+              ha-card {
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                box-sizing: border-box !important;
+                padding: 0 4px !important;
+                border-radius: 8px;
+                overflow: hidden !important;
+              }
+              .graph {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .graph__container {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .header {
+                padding: 0 2px !important;
+                min-height: 18px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+              }
+              .name {
+                font-size: 9px !important;
+                line-height: 10px !important;
+                margin: 0 !important;
+              }
+              .state {
+                font-size: 5px !important;
+                line-height: 6px !important;
+                margin: 0 !important;
+              }
+              .state__uom {
+                font-size: 4px !important;
+              }
+  aqua_air_node_row:
+    card:
+      type: horizontal-stack
+      card_mod:
+        style: |
+          :host {
+            display: block;
+            margin-bottom: 6px;
+          }
+          #root {
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+      cards:
+        - type: custom:button-card
+          entity: sensor.[[prefix]]_last_seen
+          name: '[[display_name]]'
+          icon: mdi:weather-sunny
+          show_icon: true
+          show_name: true
+          show_state: false
+          tap_action:
+            action: more-info
+          triggers_update:
+            - sensor.[[prefix]]_battery
+            - sensor.[[prefix]]_temperature
+            - sensor.[[prefix]]_humidity
+            - sensor.[[prefix]]_eco2
+            - sensor.[[prefix]]_illuminance
+            - sensor.[[prefix]]_last_seen
+          custom_fields:
+            status: |
+              [[[
+                const e = states['sensor.[[prefix]]_last_seen'];
+                return (!e || ['unknown','unavailable'].includes(e.state))
+                  ? 'OFFLINE' : 'ONLINE';
+              ]]]
+            readings: |
+              [[[
+                const val = (id, suffix = '') => {
+                  const e = states[id];
+                  return (!e || ['unknown','unavailable','none'].includes(e.state))
+                    ? '—' : `${e.state}${suffix}`;
+                };
+                return `
+                  <span><b>Bat</b>&nbsp;${val('sensor.[[prefix]]_battery',' V')}</span>
+                  <span><b>Temp</b>&nbsp;${val('sensor.[[prefix]]_temperature',' °C')}</span>
+                  <span><b>Hum</b>&nbsp;${val('sensor.[[prefix]]_humidity',' %')}</span>
+                  <span><b>CO2</b>&nbsp;${val('sensor.[[prefix]]_eco2',' ppm')}</span>
+                  <span><b>Lux</b>&nbsp;${val('sensor.[[prefix]]_illuminance',' lx')}</span>
+                `;
+              ]]]
+          state:
+            - operator: template
+              value: |
+                [[[
+                  const e = states['sensor.[[prefix]]_last_seen'];
+                  return !e || ['unknown','unavailable'].includes(e.state);
+                ]]]
+              styles:
+                card:
+                  - opacity: 0.55
+                icon:
+                  - color: var(--error-color)
+                custom_fields:
+                  status:
+                    - color: var(--error-color)
+            - operator: default
+              styles:
+                icon:
+                  - color: var(--success-color)
+                custom_fields:
+                  status:
+                    - color: var(--success-color)
+          styles:
+            card:
+              - height: 58px
+              - padding: 2px 6px
+              - border-radius: 8px
+            grid:
+              - grid-template-areas: '"i n status" "i readings readings"'
+              - grid-template-columns: 28px 90px 1fr
+              - grid-template-rows: 20px 1fr
+              - column-gap: 5px
+            icon:
+              - width: 21px
+            name:
+              - justify-self: start
+              - font-size: 11px
+              - font-weight: 700
+            custom_fields:
+              status:
+                - justify-self: end
+                - font-size: 9px
+                - font-weight: 700
+              readings:
+                - justify-self: stretch
+                - display: flex
+                - flex-wrap: wrap
+                - gap: 2px 8px
+                - font-size: 9px
+                - line-height: 11px
+        - type: custom:mini-graph-card
+          entities:
+            - entity: sensor.[[prefix]]_temperature
+          name: Temp
+          hours_to_show: 24
+          points_per_hour: 1
+          aggregate_func: avg
+          line_width: 2
+          height: 24
+          font_size: 28
+          decimals: 1
+          show:
+            icon: false
+            labels: false
+            extrema: false
+            fill: false
+            points: false
+            legend: false
+            name: true
+            state: true
+        - type: custom:mini-graph-card
+          entities:
+            - entity: sensor.[[prefix]]_humidity
+          name: Hum
+          hours_to_show: 24
+          points_per_hour: 1
+          aggregate_func: avg
+          line_width: 2
+          height: 24
+          font_size: 10
+          decimals: 1
+          lower_bound: 0
+          show:
+            icon: false
+            labels: false
+            extrema: false
+            fill: false
+            points: false
+            legend: false
+            name: true
+            state: true
+        - type: custom:mini-graph-card
+          entities:
+            - entity: sensor.[[prefix]]_illuminance
+          name: Lux
+          hours_to_show: 24
+          points_per_hour: 1
+          aggregate_func: avg
+          line_width: 2
+          height: 24
+          font_size: 10
+          decimals: 0
+          lower_bound: 0
+          show:
+            icon: false
+            labels: false
+            extrema: false
+            fill: false
+            points: false
+            legend: false
+            name: true
+            state: true
+views:
+  - path: default_view
+    title: Home
+    cards:
+      - type: entities
+        entities:
+          - entity: switch.sonoff01_sonoff01
+            name: Boorgat1
+            icon: mdi:water-pump
+          - entity: switch.sonoff02_sonoff02
+            name: boorgat2
+            icon: mdi:water-pump
+          - entity: switch.sonoff03_sonoff03
+            name: boorgat3
+            icon: mdi:water-pump
+          - entity: switch.sonoff04_sonoff04
+            name: Boorgat4
+            icon: mdi:water-pump
+          - entity: switch.sonoff05_sonoff05
+            name: boorgat5
+            icon: mdi:water-pump
+        state_color: true
+        title: Boorgat
+      - type: entities
+        entities:
+          - entity: switch.sonoff06_sonoff06
+            name: Centrifical01
+            icon: mdi:pump
+          - entity: switch.sonoff07_sonoff07
+            name: Centrifical02
+            icon: mdi:pump
+          - entity: switch.sonoff08_sonoff08
+            name: Centrifical03
+            icon: mdi:pump
+          - entity: switch.sonoff09_sonoff09
+            name: Centrifical04
+            icon: mdi:pump
+        title: Pomp Huis
+        state_color: true
+      - type: entities
+        entities:
+          - entity: switch.borehole10_socket_1
+            name: Pomp
+            icon: mdi:water-pump
+          - entity: sensor.borehole10_power
+            name:
+              type: entity
+          - entity: sensor.borehole10_current
+            name: Current
+          - entity: sensor.borehole10_voltage
+            name: Voltage
+          - entity: script.restart_borehole10_tuya
+            name: Restart Integration
+        title: Boorgat10
+        state_color: true
+      - type: entities
+        entities:
+          - entity: switch.borehole11_socket_1
+            name: Pomp
+            icon: mdi:water-pump
+          - entity: sensor.borehole11_power
+            name:
+              type: entity
+          - entity: sensor.borehole11_current
+            name: Current
+          - entity: sensor.borehole11_voltage
+            name: Voltage
+        title: Boorgat11
+        state_color: true
+      - type: entities
+        entities:
+          - entity: sensor.water_meter_borehole1_daily_used_borehole_1
+            name: Daily Used Borehole 1
+          - entity: sensor.water_meter_borehole1_flow_rate_borehole_1
+            name: Flow Rate Borehole 1
+          - entity: sensor.water_meter_borehole1_total_used_borehole_1
+            name: Total Used Borehole 1
+          - entity: sensor.water_meter_borehole1_total_used_borehole_1_m3
+            name: Total Used Borehole 1 (m³)
+          - entity: sensor.water_meter_borehole1_uptime_borehole_1_formatted
+            name: Uptime Borehole 1 (formatted)
+          - entity: sensor.water_meter_borehole1_wifi_signal_borehole_1
+          - entity: button.water_meter_borehole1_reset_counters_borehole_1
+          - entity: sensor.water_meter_borehole_1_borehole1_latitude
+          - entity: sensor.water_meter_borehole_1_borehole1_longitude
+        title: Water Meter Borehole 1
+    badges:
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.ruijie_router_wan_status
+        name: Eskom
+        icon: mdi:power
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.water_meter_borehole1_flow_rate_borehole_1
+        name: Borehole1
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.water_meter_borehole2_flow_rate_borehole_2
+        name: Borehole2
+  - type: sections
+    max_columns: 4
+    icon: mdi:thermometer-probe
+    path: probes
+    title: Probes
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Aqua Nodes
+            heading_style: title
+          - type: custom:decluttering-card
+            template: aqua_air_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: Floating Temp
+              - prefix: lora_aqua101_aqua101
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: W10
+              - prefix: lora_aqia01_aqia01
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: K5
+              - prefix: lora_aqua02_aqua02
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: M5
+              - prefix: lora_aqua03_aqua03
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: W1
+              - prefix: lora_aqua04_aqua04
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: W3
+              - prefix: lora_aqua05_aqua05
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: K6
+              - prefix: lora_aqua06_aqua06
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: M8
+              - prefix: lora_aqua07_aqua07
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: M10
+              - prefix: lora_aqua09_aqua09
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: W9
+              - prefix: lora_aqua010_aqua010
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: K3
+              - prefix: lora_aqua011_aqua011
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: M3
+              - prefix: lora_aqua12_aqua12
+          - type: custom:decluttering-card
+            template: aqua_node_row
+            grid_options:
+              columns: full
+              rows: 1
+            variables:
+              - display_name: M1
+              - prefix: lora_aqua013_aqua013
+        column_span: 4
+    header:
+      layout: center
+      badges_position: top
+      badges_wrap: wrap
+    badges:
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_mqtt_connected
+        name: Connected
+        color: green
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: binary_sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_serial_ok
+        name: Serial
+        color: green
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_nodes_seen
+        name: Gw1 No Nodes
+        icon: mdi:monitor-vertical
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_uptime
+        name: Up Time
+        icon: mdi:clock-time-eight-outline
+      - type: entity
+        show_name: true
+        show_state: true
+        show_icon: true
+        entity: sensor.lora_gateway_pi_zero2_gw01_pi_zero2_gw01_heartbeat
+        name: Last Seen
+        icon: mdi:eye-arrow-left-outline
+  - type: sections
+    max_columns: 4
+    title: Schedule
+    path: schedule
+    icon: mdi:book-clock-outline
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Scheduler
+            heading_style: title
+          - type: custom:scheduler-card
+            display_options:
+              secondary_info:
+                - relative-time
+                - days
+                - time
+            default_editor: scheme
+  - type: sections
+    max_columns: 4
+    title: Map
+    path: map
+    icon: mdi:map
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: New section
+          - type: map
+            entities:
+              - entity: device_tracker.andres_iphone
+              - entity: device_tracker.hendre_iphone
+            theme_mode: auto
+            grid_options:
+              columns: full
+              rows: 6
+  - type: sections
+    max_columns: 4
+    title: Weather
+    path: weather
+    icon: mdi:weather-cloudy
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+          - type: entities
+            entities:
+              - entity: sensor.xtatech_weather_published_states
+                name: Published States
+                icon: mdi:counter
+              - entity: sensor.xtatech_weather_invalid_json_lines
+                name: Invalid JSON Lines
+                icon: mdi:code-json
+          - type: custom:compass-card
+            indicator_sensors:
+              - indicator:
+                  image: arrow_outward
+                sensor: sensor.xtatech_weather_wind_direction
+            value_sensors:
+              - sensor: sensor.xtatech_weather_wind_speed
+          - type: entities
+            entities:
+              - entity: sensor.xtatech_weather_temperature
+                name: Temperature
+                icon: mdi:thermometer
+              - entity: sensor.xtatech_weather_humidity
+                name: Humidity
+                icon: mdi:water-percent
+              - entity: sensor.xtatech_weather_pressure
+                name: Pressure
+                icon: mdi:gauge
+          - type: entities
+            entities:
+              - entity: sensor.xtatech_weather_rain_total
+                name: Rain Total
+                icon: mdi:weather-pouring
+              - entity: sensor.xtatech_weather_rain_interval
+                name: Rain Interval
+                icon: mdi:weather-rainy
+              - entity: sensor.xtatech_weather_rain_rate
+                name: Rain Rate
+                icon: mdi:weather-pouring
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+          - type: entities
+            entities:
+              - entity: binary_sensor.xtatech_weather_lightning_detector_present
+                name: Detector Present
+                icon: mdi:access-point-network
+              - entity: binary_sensor.xtatech_weather_lightning_event
+                name: Lightning Event
+                icon: mdi:weather-lightning
+              - entity: sensor.xtatech_weather_lightning_count
+                name: Lightning Count
+                icon: mdi:counter
+              - entity: sensor.xtatech_weather_lightning_distance
+                name: Lightning Distance
+                icon: mdi:map-marker-distance
+          - type: history-graph
+            entities:
+              - entity: sensor.xtatech_weather_temperature
+                name: Temperature
+              - entity: sensor.xtatech_weather_humidity
+                name: Humidity
+              - entity: sensor.xtatech_weather_pressure
+                name: Pressure
+              - entity: sensor.xtatech_weather_wind_speed
+              - entity: sensor.xtatech_weather_rain_rate
+                name: Rain Rate
+  - type: panel
+    path: nodemap
+    title: NodeMap
+    cards:
+      - type: picture-elements
+        elements:
+          - type: state-badge
+            entity: sensor.backup_backup_manager_state
+            style:
+              top: 32%
+              left: 40%
+        image: >-
+          "https://earth.google.com/web/@0,-0.40042982,0a,22251752.77375655d,35y,0h,0t,0r/data=CgRCAggBQgIIAEoNCP___________wEQAA?utm_source=earth7&utm_campaign=vine&hl=en"
