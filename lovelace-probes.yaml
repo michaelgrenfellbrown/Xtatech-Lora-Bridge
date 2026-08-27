@@ -407,6 +407,47 @@ decluttering_templates:
             legend: false
             name: true
             state: true
+          card_mod:
+            style: |
+              ha-card {
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                box-sizing: border-box !important;
+                padding: 0 4px !important;
+                border-radius: 8px;
+                overflow: hidden !important;
+              }
+              .graph {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .graph__container {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .header {
+                padding: 0 2px !important;
+                min-height: 18px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+              }
+              .name {
+                font-size: 9px !important;
+                line-height: 10px !important;
+                margin: 0 !important;
+              }
+              .state {
+                font-size: 5px !important;
+                line-height: 6px !important;
+                margin: 0 !important;
+              }
+              .state__uom {
+                font-size: 4px !important;
+              }
         - type: custom:mini-graph-card
           entities:
             - entity: sensor.[[prefix]]_humidity
@@ -428,6 +469,47 @@ decluttering_templates:
             legend: false
             name: true
             state: true
+          card_mod:
+            style: |
+              ha-card {
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                box-sizing: border-box !important;
+                padding: 0 4px !important;
+                border-radius: 8px;
+                overflow: hidden !important;
+              }
+              .graph {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .graph__container {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .header {
+                padding: 0 2px !important;
+                min-height: 18px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+              }
+              .name {
+                font-size: 9px !important;
+                line-height: 10px !important;
+                margin: 0 !important;
+              }
+              .state {
+                font-size: 5px !important;
+                line-height: 6px !important;
+                margin: 0 !important;
+              }
+              .state__uom {
+                font-size: 4px !important;
+              }
         - type: custom:mini-graph-card
           entities:
             - entity: sensor.[[prefix]]_illuminance
@@ -449,6 +531,47 @@ decluttering_templates:
             legend: false
             name: true
             state: true
+          card_mod:
+            style: |
+              ha-card {
+                height: 58px !important;
+                min-height: 58px !important;
+                max-height: 58px !important;
+                box-sizing: border-box !important;
+                padding: 0 4px !important;
+                border-radius: 8px;
+                overflow: hidden !important;
+              }
+              .graph {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .graph__container {
+                height: 24px !important;
+                max-height: 24px !important;
+                overflow: hidden !important;
+              }
+              .header {
+                padding: 0 2px !important;
+                min-height: 18px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+              }
+              .name {
+                font-size: 9px !important;
+                line-height: 10px !important;
+                margin: 0 !important;
+              }
+              .state {
+                font-size: 5px !important;
+                line-height: 6px !important;
+                margin: 0 !important;
+              }
+              .state__uom {
+                font-size: 4px !important;
+              }
 views:
   - path: default_view
     title: Home
