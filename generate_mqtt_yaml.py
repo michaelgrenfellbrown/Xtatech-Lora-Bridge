@@ -25,19 +25,19 @@ ABOVE_GROUND_FIELDS = [
 ]
 
 NODES = [
-    ("aqia01", "aqia01", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua02", "aqua02", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua03", "aqua03", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua04", "aqua04", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua05", "aqua05", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua06", "aqua06", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua07", "aqua07", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua08", "aqua08", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua09", "aqua09", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua010", "aqua010", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua011", "aqua011", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua012", "aqua12", "LoRa Sensor Node", BURIED_FIELDS),
-    ("aqua013", "aqua013", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqia01", "aqia01", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua02", "aqua02", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua03", "aqua03", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua04", "aqua04", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua05", "aqua05", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua06", "aqua06", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua07", "aqua07", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua08", "aqua08", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua09", "aqua09", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua010", "aqua010", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua011", "aqua011", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua012", "aqua12", "LoRa Sensor Node", BURIED_FIELDS),
+    ("Aqua013", "aqua013", "LoRa Sensor Node", BURIED_FIELDS),
     ("Aqua101", "aqua101", "LoRa Above Ground Sensor Node", ABOVE_GROUND_FIELDS),
 ]
 
