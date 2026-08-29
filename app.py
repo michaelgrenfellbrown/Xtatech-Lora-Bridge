@@ -333,6 +333,10 @@ def derive_node_id(payload: Dict[str, Any], id_keys: List[str]) -> str:
     return "unknown"
 
 
+def is_unknown_node_id(node_id: str) -> bool:
+    return not str(node_id or "").strip() or str(node_id).strip().lower() == "unknown"
+
+
 def get_ip() -> str:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -760,7 +764,7 @@ class RuntimeStats:
         self.last_serial_port_ok = True
         self.last_serial_error = ""
         self.serial_packets_parsed += 1
-        if node_id:
+        if not is_unknown_node_id(node_id):
             self.nodes_seen[node_id] = t
 
     def mark_serial_parse_drop(self):
@@ -1199,6 +1203,10 @@ class SerialBridge:
                     await self.logs.add("WARN", f"Serial line ignored by {mode} parser: {line[:200]}")
                     continue
                 node_id = "raw" if mode == "raw" else derive_node_id(payload, id_keys)
+                if is_unknown_node_id(node_id):
+                    self.stats.mark_serial_parse_drop()
+                    await self.logs.add("WARN", f"Serial line ignored because node name is unknown: {line[:200]}")
+                    continue
 
                 payload.setdefault("ts", now_ts())
                 payload.setdefault("ts_iso", now_iso_utc())
