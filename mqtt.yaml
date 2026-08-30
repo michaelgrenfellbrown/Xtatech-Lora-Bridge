@@ -76,6 +76,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_battery"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -90,6 +91,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_temperature"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -99,6 +101,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_humidity"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -108,6 +111,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_ph"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqia01
@@ -116,6 +120,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_sleep"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqia01
@@ -124,6 +129,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_count"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqia01
   - name: "Aqia01 RSSI"
@@ -131,6 +137,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_rssi"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -140,6 +147,7 @@ sensor:
     default_entity_id: "sensor.lora_aqia01_aqia01_last_seen"
     state_topic: "lora/Aqia01/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqia01
 
@@ -148,6 +156,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_battery"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -162,6 +171,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_temperature"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -171,6 +181,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_humidity"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -180,6 +191,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_ph"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua02
@@ -188,6 +200,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_sleep"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua02
@@ -196,6 +209,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_count"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua02
   - name: "Aqua02 RSSI"
@@ -203,6 +217,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_rssi"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -212,6 +227,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua02_aqua02_last_seen"
     state_topic: "lora/Aqua02/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua02
 
@@ -220,6 +236,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_battery"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -234,6 +251,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_temperature"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -243,6 +261,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_humidity"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -252,6 +271,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_ph"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua03
@@ -260,6 +280,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_sleep"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua03
@@ -268,6 +289,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_count"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua03
   - name: "Aqua03 RSSI"
@@ -275,6 +297,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_rssi"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -284,6 +307,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua03_aqua03_last_seen"
     state_topic: "lora/Aqua03/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua03
 
@@ -292,6 +316,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_battery"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -306,6 +331,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_temperature"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -315,6 +341,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_humidity"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -324,6 +351,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_ph"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua04
@@ -332,6 +360,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_sleep"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua04
@@ -340,6 +369,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_count"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua04
   - name: "Aqua04 RSSI"
@@ -347,6 +377,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_rssi"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -356,6 +387,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua04_aqua04_last_seen"
     state_topic: "lora/Aqua04/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua04
 
@@ -364,6 +396,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_battery"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -378,6 +411,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_temperature"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -387,6 +421,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_humidity"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -396,6 +431,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_ph"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua05
@@ -404,6 +440,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_sleep"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua05
@@ -412,6 +449,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_count"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua05
   - name: "Aqua05 RSSI"
@@ -419,6 +457,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_rssi"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -428,6 +467,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua05_aqua05_last_seen"
     state_topic: "lora/Aqua05/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua05
 
@@ -436,6 +476,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_battery"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -450,6 +491,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_temperature"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -459,6 +501,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_humidity"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -468,6 +511,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_ph"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua06
@@ -476,6 +520,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_sleep"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua06
@@ -484,6 +529,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_count"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua06
   - name: "Aqua06 RSSI"
@@ -491,6 +537,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_rssi"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -500,6 +547,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua06_aqua06_last_seen"
     state_topic: "lora/Aqua06/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua06
 
@@ -508,6 +556,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_battery"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -522,6 +571,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_temperature"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -531,6 +581,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_humidity"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -540,6 +591,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_ph"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua07
@@ -548,6 +600,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_sleep"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua07
@@ -556,6 +609,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_count"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua07
   - name: "Aqua07 RSSI"
@@ -563,6 +617,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_rssi"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -572,6 +627,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua07_aqua07_last_seen"
     state_topic: "lora/Aqua07/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua07
 
@@ -580,6 +636,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_battery"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -594,6 +651,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_temperature"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -603,6 +661,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_humidity"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -612,6 +671,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_ph"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua08
@@ -620,6 +680,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_sleep"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua08
@@ -628,6 +689,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_count"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua08
   - name: "Aqua08 RSSI"
@@ -635,6 +697,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_rssi"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -644,6 +707,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua08_aqua08_last_seen"
     state_topic: "lora/Aqua08/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua08
 
@@ -652,6 +716,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_battery"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -666,6 +731,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_temperature"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -675,6 +741,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_humidity"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -684,6 +751,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_ph"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua09
@@ -692,6 +760,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_sleep"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua09
@@ -700,6 +769,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_count"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua09
   - name: "Aqua09 RSSI"
@@ -707,6 +777,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_rssi"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -716,6 +787,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua09_aqua09_last_seen"
     state_topic: "lora/Aqua09/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua09
 
@@ -724,6 +796,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_battery"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -738,6 +811,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_temperature"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -747,6 +821,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_humidity"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -756,6 +831,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_ph"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua010
@@ -764,6 +840,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_sleep"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua010
@@ -772,6 +849,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_count"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua010
   - name: "Aqua010 RSSI"
@@ -779,6 +857,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_rssi"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -788,6 +867,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua010_aqua010_last_seen"
     state_topic: "lora/Aqua010/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua010
 
@@ -796,6 +876,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_battery"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -810,6 +891,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_temperature"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -819,6 +901,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_humidity"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -828,6 +911,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_ph"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua011
@@ -836,6 +920,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_sleep"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua011
@@ -844,6 +929,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_count"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua011
   - name: "Aqua011 RSSI"
@@ -851,6 +937,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_rssi"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -860,6 +947,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua011_aqua011_last_seen"
     state_topic: "lora/Aqua011/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua011
 
@@ -868,6 +956,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_battery"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -882,6 +971,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_temperature"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -891,6 +981,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_humidity"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -900,6 +991,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_ph"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua012
@@ -908,6 +1000,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_sleep"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua012
@@ -916,6 +1009,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_count"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua012
   - name: "Aqua012 RSSI"
@@ -923,6 +1017,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_rssi"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -932,6 +1027,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua12_aqua12_last_seen"
     state_topic: "lora/Aqua012/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua012
 
@@ -940,6 +1036,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_battery"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -954,6 +1051,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_temperature"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -963,6 +1061,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_humidity"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -972,6 +1071,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_ph"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.PH | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "pH"
     device: *device_aqua013
@@ -980,6 +1080,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_sleep"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua013
@@ -988,6 +1089,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_count"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua013
   - name: "Aqua013 RSSI"
@@ -995,6 +1097,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_rssi"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -1004,6 +1107,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua013_aqua013_last_seen"
     state_topic: "lora/Aqua013/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua013
 
@@ -1012,6 +1116,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_battery"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
     device_class: voltage
     state_class: measurement
     unit_of_measurement: "V"
@@ -1026,6 +1131,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_temperature"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
     device_class: temperature
     state_class: measurement
     unit_of_measurement: "°C"
@@ -1035,6 +1141,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_humidity"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
     device_class: humidity
     state_class: measurement
     unit_of_measurement: "%"
@@ -1044,6 +1151,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_eco2"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.eco2 | default(None) }}"
+    force_update: true
     device_class: carbon_dioxide
     state_class: measurement
     unit_of_measurement: "ppm"
@@ -1053,6 +1161,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_illuminance"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.lux | default(None) }}"
+    force_update: true
     device_class: illuminance
     state_class: measurement
     unit_of_measurement: "lx"
@@ -1062,6 +1171,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_sleep"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
     state_class: measurement
     unit_of_measurement: "s"
     device: *device_aqua101
@@ -1070,6 +1180,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_count"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
     state_class: total_increasing
     device: *device_aqua101
   - name: "Aqua101 RSSI"
@@ -1077,6 +1188,7 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_rssi"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.rssi | default(None) }}"
+    force_update: true
     device_class: signal_strength
     state_class: measurement
     unit_of_measurement: "dBm"
@@ -1086,5 +1198,6 @@ sensor:
     default_entity_id: "sensor.lora_aqua101_aqua101_last_seen"
     state_topic: "lora/Aqua101/state"
     value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
     device_class: timestamp
     device: *device_aqua101

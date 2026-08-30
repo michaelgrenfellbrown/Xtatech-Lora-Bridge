@@ -38,6 +38,7 @@ INSTALLED_COMMIT_PATH = BASE_DIR / ".installed_commit"
 _RSSI_RE = re.compile(r"rssi[:=]\s*(-?\d+)", re.IGNORECASE)
 _KV_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_-]*)\s*[:=]\s*([^,\s;]+)")
 _GIT_PROGRESS_RE = re.compile(r"(Receiving objects|Resolving deltas|Counting objects|Compressing objects):\s+(\d+)%")
+NODE_NAME_KEYS = {"name", "node_name", "nodename"}
 BOOT_TS = time.time()
 CLONE_PROC: Optional[subprocess.Popen] = None
 INSTALL_PROC: Optional[subprocess.Popen] = None
@@ -335,6 +336,14 @@ def derive_node_id(payload: Dict[str, Any], id_keys: List[str]) -> str:
 
 def is_unknown_node_id(node_id: str) -> bool:
     return not str(node_id or "").strip() or str(node_id).strip().lower() == "unknown"
+
+
+def has_unknown_node_name(payload: Dict[str, Any]) -> bool:
+    for key, value in payload.items():
+        normalized_key = str(key).strip().lower().replace("-", "_")
+        if normalized_key in NODE_NAME_KEYS and is_unknown_node_id(str(value)):
+            return True
+    return False
 
 
 def get_ip() -> str:
@@ -912,6 +921,7 @@ class DiscoveryPublisher:
                 "unique_id": f"lora_{node_id.lower()}_{key}",
                 "state_topic": state_topic,
                 "value_template": f"{{{{ value_json.{json_key} | default(None) }}}}",
+                "force_update": True,
                 "device": device,
             }
             if stcls:
@@ -1203,7 +1213,7 @@ class SerialBridge:
                     await self.logs.add("WARN", f"Serial line ignored by {mode} parser: {line[:200]}")
                     continue
                 node_id = "raw" if mode == "raw" else derive_node_id(payload, id_keys)
-                if is_unknown_node_id(node_id):
+                if is_unknown_node_id(node_id) or has_unknown_node_name(payload):
                     self.stats.mark_serial_parse_drop()
                     await self.logs.add("WARN", f"Serial line ignored because node name is unknown: {line[:200]}")
                     continue

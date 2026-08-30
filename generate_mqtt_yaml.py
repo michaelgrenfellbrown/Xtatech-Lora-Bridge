@@ -96,6 +96,7 @@ def build_yaml() -> str:
             lines.append(f'    default_entity_id: "sensor.{prefix}_{object_suffix}"')
             lines.append(f'    state_topic: "lora/{node}/state"')
             lines.append(f'    value_template: "{{{{ value_json.{json_key} | default(None) }}}}"')
+            lines.append("    force_update: true")
             if devcls:
                 lines.append(f"    device_class: {devcls}")
             if stcls:
