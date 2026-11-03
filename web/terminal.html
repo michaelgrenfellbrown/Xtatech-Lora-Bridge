@@ -1,69 +1,71 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Local Terminal</title>
+  <title>Terminal · Xtatech LoRa Bridge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="/xtatech.png"/>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; color: #111; }
-    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-    .page-header { display: flex; align-items: center; gap: 14px; }
-    .page-header img { width: 120px; max-width: 34vw; height: auto; }
-    .page-header h2 { margin: 0 0 4px; }
-    .small { font-size: 12px; color: #666; }
-    .app-version { margin: -2px 0 2px; }
-    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-    .nav a { color: #164f8b; text-decoration: none; }
-    .banner { border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid #ffd591; background: #fff7e6; color: #7a4b00; }
-    .terminal { background: #0b0f0c; color: #98fb98; font-family: Consolas, Monaco, monospace; font-size: 13px; padding: 12px; height: 480px; overflow: auto; white-space: pre-wrap; border-radius: 8px; }
-    input, button { padding: 9px 12px; margin: 6px 0; box-sizing: border-box; }
-    input { width: 100%; }
-    button { cursor: pointer; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .row button { width: auto; }
-  </style>
+  <link rel="icon" type="image/png" href="/static/xtatech-mark.png"/>
+  <link rel="stylesheet" href="/static/app.css?v=2.1.0"/>
+  <script src="/static/app.js?v=2.1.0" defer></script>
 </head>
 <body>
-<div class="card">
-  <div class="page-header">
-    <img src="/xtatech.png" alt="Xtatech logo"/>
-    <div>
-      <h2>Local Terminal</h2>
-      <div class="small app-version">Version <span data-app-version>v2.0.2</span></div>
-      <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/services">Services</a><a href="/metrics">Metrics</a></div>
+<header class="xt-topbar">
+  <div class="xt-topbar-inner">
+    <a class="xt-brand" href="/">
+      <span class="xt-brand-mark"><img src="/static/xtatech-mark.png" alt="Xtatech"/></span>
+      <span class="xt-brand-text"><span class="xt-brand-name">LoRa Bridge</span><span class="xt-brand-sub">Xtatech</span></span>
+    </a>
+    <nav class="xt-nav" aria-label="Main">
+      <a href="/">Dashboard</a>
+      <a href="/services">Services</a>
+      <a href="/diagnostics">Diagnostics</a>
+      <a href="/metrics">Metrics</a>
+      <a href="/ssh">SSH</a>
+      <a href="/terminal" aria-current="page">Terminal</a>
+    </nav>
+    <div class="xt-health" aria-live="polite">
+      <span id="xt_health_mqtt" class="pill"><span class="dot"></span><span data-pill-text>MQTT</span></span>
+      <span id="xt_health_serial" class="pill"><span class="dot"></span><span data-pill-text>Serial</span></span>
     </div>
   </div>
-</div>
+</header>
 
-<div class="banner">
-  This opens a shell on the bridge as the service user. Keep the token private and disable this page when you do not need it.
-</div>
-
-<div class="card">
-  <label>Terminal token</label>
-  <input id="token" type="password" autocomplete="current-password" placeholder="Token from terminal.token in config.yaml"/>
-  <div class="row">
-    <button onclick="connectTerminal()">Connect</button>
-    <button onclick="disconnectTerminal()">Disconnect</button>
-    <button onclick="sendCtrlC()">Ctrl-C</button>
-    <button onclick="clearTerminal()">Clear</button>
+<main class="xt-main">
+<div class="xt-page-head">
+    <div>
+      <h1>Local terminal</h1>
+      <div class="xt-page-sub">A shell on the bridge, running as the service user.</div>
+    </div>
   </div>
-  <div id="terminal" class="terminal"></div>
-  <input id="command" autocomplete="off" placeholder="Type a command and press Enter"/>
-</div>
+
+  <div class="banner static" role="note">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+    <span>Keep the terminal token private, and disable this page in config.yaml when you don’t need it.</span>
+  </div>
+
+  <section class="card" aria-label="Terminal">
+    <div class="field-row">
+      <div class="grow">
+        <label for="token">Terminal token</label>
+        <input id="token" type="password" autocomplete="current-password" placeholder="Token from terminal.token in config.yaml"/>
+      </div>
+      <button type="button" class="primary" onclick="connectTerminal()">Connect</button>
+      <button type="button" onclick="disconnectTerminal()">Disconnect</button>
+      <button type="button" onclick="sendCtrlC()">Ctrl-C</button>
+      <button type="button" onclick="clearTerminal()">Clear</button>
+    </div>
+    <div id="terminal" class="terminal" style="margin-top: 16px" aria-live="polite"></div>
+    <label for="command" class="visually-hidden">Command</label>
+    <input id="command" type="text" class="mono" autocomplete="off" spellcheck="false" placeholder="Type a command and press Enter" style="margin-top: 10px; font-family: var(--xt-mono); font-size: 13px"/>
+  </section>
+
+  <footer class="xt-footer">
+    <span>Xtatech LoRa Bridge · <span data-app-version>v2.0.2</span></span>
+    <span>Times in Africa/Johannesburg</span>
+  </footer>
+</main>
 
 <script>
-async function loadAppVersion() {
-  try {
-    const r = await fetch('/api/version');
-    const j = await r.json();
-    document.querySelectorAll('[data-app-version]').forEach((el) => el.textContent = j.display || `v${j.version}`);
-  } catch {}
-}
-
-loadAppVersion();
-
 let ws = null;
 let sawSocketError = false;
 const terminal = document.getElementById('terminal');

@@ -43,6 +43,9 @@ cp -f "$SCRIPT_DIR/web/metrics.html" "$APP_DIR/web/metrics.html"
 cp -f "$SCRIPT_DIR/web/ssh.html" "$APP_DIR/web/ssh.html"
 cp -f "$SCRIPT_DIR/web/terminal.html" "$APP_DIR/web/terminal.html"
 cp -f "$SCRIPT_DIR/web/xtatech.png" "$APP_DIR/web/xtatech.png"
+cp -f "$SCRIPT_DIR/web/xtatech-mark.png" "$APP_DIR/web/xtatech-mark.png"
+cp -f "$SCRIPT_DIR/web/app.css" "$APP_DIR/web/app.css"
+cp -f "$SCRIPT_DIR/web/app.js" "$APP_DIR/web/app.js"
 if git -C "$SCRIPT_DIR" rev-parse HEAD >/dev/null 2>&1; then
   git -C "$SCRIPT_DIR" rev-parse HEAD > "$APP_DIR/.installed_commit"
 else

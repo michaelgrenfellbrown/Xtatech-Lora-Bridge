@@ -1,81 +1,81 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>SSH</title>
+  <title>SSH · Xtatech LoRa Bridge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="/xtatech.png"/>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; color: #111; }
-    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-    .page-header { display: flex; align-items: center; gap: 14px; }
-    .page-header img { width: 120px; max-width: 34vw; height: auto; }
-    .page-header h2 { margin: 0 0 4px; }
-    .small { font-size: 12px; color: #666; }
-    .app-version { margin: -2px 0 2px; }
-    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-    .nav a { color: #164f8b; text-decoration: none; }
-    .nav a:hover { text-decoration: underline; }
-    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
-    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
-    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
-    .ok { color: #0a7a2f; }
-    .bad { color: #b42318; }
-    input { width: 100%; padding: 10px; box-sizing: border-box; font-size: 15px; }
-    button { padding: 10px 14px; margin: 8px 6px 0 0; cursor: pointer; border: 1px solid #cfcfcf; border-radius: 6px; background: #f6f6f6; }
-    button:hover { background: #ececec; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; min-height: 90px; overflow: auto; border-radius: 8px; }
-  </style>
+  <link rel="icon" type="image/png" href="/static/xtatech-mark.png"/>
+  <link rel="stylesheet" href="/static/app.css?v=2.1.0"/>
+  <script src="/static/app.js?v=2.1.0" defer></script>
 </head>
 <body>
-<div class="card">
-  <div class="page-header">
-    <img src="/xtatech.png" alt="Xtatech logo"/>
-    <div>
-      <h2>SSH Access</h2>
-      <div class="small app-version">Version <span data-app-version>v2.0.2</span></div>
-      <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/services">Services</a><a href="/metrics">Metrics</a></div>
+<header class="xt-topbar">
+  <div class="xt-topbar-inner">
+    <a class="xt-brand" href="/">
+      <span class="xt-brand-mark"><img src="/static/xtatech-mark.png" alt="Xtatech"/></span>
+      <span class="xt-brand-text"><span class="xt-brand-name">LoRa Bridge</span><span class="xt-brand-sub">Xtatech</span></span>
+    </a>
+    <nav class="xt-nav" aria-label="Main">
+      <a href="/">Dashboard</a>
+      <a href="/services">Services</a>
+      <a href="/diagnostics">Diagnostics</a>
+      <a href="/metrics">Metrics</a>
+      <a href="/ssh" aria-current="page">SSH</a>
+      <a href="/terminal">Terminal</a>
+    </nav>
+    <div class="xt-health" aria-live="polite">
+      <span id="xt_health_mqtt" class="pill"><span class="dot"></span><span data-pill-text>MQTT</span></span>
+      <span id="xt_health_serial" class="pill"><span class="dot"></span><span data-pill-text>Serial</span></span>
     </div>
   </div>
-</div>
+</header>
 
-<div class="card">
-  <h3>Connection Status</h3>
-  <div class="status-grid">
-    <div class="status-item"><div class="label">Device</div><div id="device" class="value">-</div></div>
-    <div class="status-item"><div class="label">IP Address</div><div id="ip" class="value">-</div></div>
-    <div class="status-item"><div class="label">SSH Port</div><div id="port" class="value">-</div></div>
-    <div class="status-item"><div class="label">Service</div><div id="service" class="value">-</div></div>
+<main class="xt-main">
+<div class="xt-page-head">
+    <div>
+      <h1>SSH access</h1>
+      <div class="xt-page-sub">Connection details for logging in to the bridge over SSH.</div>
+    </div>
+    <div class="xt-page-actions">
+      <button type="button" onclick="loadStatus()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg> Refresh</button>
+    </div>
   </div>
-  <button onclick="loadStatus()">Refresh</button>
-</div>
 
-<div class="card">
-  <h3>SSH Command</h3>
-  <label class="small" for="ssh_user">Username</label>
-  <input id="ssh_user" value=""/>
-  <button onclick="buildCommand()">Update Command</button>
-  <button onclick="copyCommand()">Copy Command</button>
-  <pre id="ssh_command">Loading...</pre>
-</div>
+  <section class="card" aria-label="Connection status">
+    <h3>Connection status</h3>
+    <div class="status-grid">
+      <div class="status-item"><div class="label">Device</div><div id="device" class="value">-</div></div>
+      <div class="status-item"><div class="label">IP address</div><div id="ip" class="value">-</div></div>
+      <div class="status-item"><div class="label">SSH port</div><div id="port" class="value">-</div></div>
+      <div class="status-item"><div class="label">Service</div><div id="service" class="value">-</div></div>
+    </div>
+  </section>
 
-<div class="card">
-  <h3>Details</h3>
-  <pre id="details">Loading...</pre>
-</div>
+  <section class="card" aria-label="SSH command">
+    <h3>SSH command</h3>
+    <div class="field-row">
+      <div class="grow">
+        <label for="ssh_user">Username</label>
+        <input id="ssh_user" type="text" value="" autocomplete="username"/>
+      </div>
+      <button type="button" onclick="buildCommand()">Update command</button>
+      <button type="button" class="primary" onclick="copyCommand()">Copy command</button>
+    </div>
+    <pre id="ssh_command" class="console" style="margin-top: 16px; min-height: 0">Loading…</pre>
+  </section>
+
+  <section class="card" aria-label="Details">
+    <h3>Details</h3>
+    <pre id="details" class="console">Loading…</pre>
+  </section>
+
+  <footer class="xt-footer">
+    <span>Xtatech LoRa Bridge · <span data-app-version>v2.0.2</span></span>
+    <span>Times in Africa/Johannesburg</span>
+  </footer>
+</main>
 
 <script>
-async function loadAppVersion() {
-  try {
-    const r = await fetch('/api/version');
-    const j = await r.json();
-    document.querySelectorAll('[data-app-version]').forEach((el) => el.textContent = j.display || `v${j.version}`);
-  } catch {}
-}
-
-loadAppVersion();
-
 let sshStatus = null;
 
 function setValue(id, text, cls) {

@@ -1,92 +1,84 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Diagnostics</title>
+  <title>Diagnostics · Xtatech LoRa Bridge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="/xtatech.png"/>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; }
-    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-    .page-header { display: flex; align-items: center; gap: 14px; }
-    .page-header img { width: 120px; max-width: 34vw; height: auto; }
-    .page-header h2 { margin: 0 0 4px; }
-    .small { font-size: 12px; color: #666; }
-    .app-version { margin: -2px 0 2px; }
-    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-    .nav a { color: #164f8b; text-decoration: none; }
-    .nav a:hover { text-decoration: underline; }
-    .row { display: flex; flex-wrap: wrap; gap: 12px; }
-    .col { flex: 1; min-width: 320px; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; height: 340px; overflow: auto; border-radius: 8px; }
-    button { padding: 10px 14px; margin-top: 8px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; font-size: 14px; vertical-align: top; }
-    .table-wrap { overflow-x: auto; }
-    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
-    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
-    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
-    .ok { color: #0a7a2f; }
-    .bad { color: #b42318; }
-    .warn { color: #8a5a00; }
-    .banner { display: none; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid #ffa39e; background: #fff1f0; color: #8c1d18; }
-    .banner.show { display: block; }
-  </style>
+  <link rel="icon" type="image/png" href="/static/xtatech-mark.png"/>
+  <link rel="stylesheet" href="/static/app.css?v=2.1.0"/>
+  <script src="/static/app.js?v=2.1.0" defer></script>
 </head>
 <body>
-<div class="card">
-  <div class="page-header">
-    <img src="/xtatech.png" alt="Xtatech logo"/>
-    <div>
-      <h2>Diagnostics</h2>
-      <div class="small app-version">Version <span data-app-version>v2.0.2</span></div>
-      <div class="nav small"><a href="/">Dashboard</a><a href="/services">Services</a><a href="/metrics">Metrics</a><a href="/terminal">Terminal</a></div>
-      <button onclick="loadDiag()">Refresh</button>
+<header class="xt-topbar">
+  <div class="xt-topbar-inner">
+    <a class="xt-brand" href="/">
+      <span class="xt-brand-mark"><img src="/static/xtatech-mark.png" alt="Xtatech"/></span>
+      <span class="xt-brand-text"><span class="xt-brand-name">LoRa Bridge</span><span class="xt-brand-sub">Xtatech</span></span>
+    </a>
+    <nav class="xt-nav" aria-label="Main">
+      <a href="/">Dashboard</a>
+      <a href="/services">Services</a>
+      <a href="/diagnostics" aria-current="page">Diagnostics</a>
+      <a href="/metrics">Metrics</a>
+      <a href="/ssh">SSH</a>
+      <a href="/terminal">Terminal</a>
+    </nav>
+    <div class="xt-health" aria-live="polite">
+      <span id="xt_health_mqtt" class="pill"><span class="dot"></span><span data-pill-text>MQTT</span></span>
+      <span id="xt_health_serial" class="pill"><span class="dot"></span><span data-pill-text>Serial</span></span>
     </div>
   </div>
-</div>
-<div id="diag_error" class="banner"></div>
+</header>
 
-<div class="card">
-  <h3>Health Summary</h3>
-  <div class="status-grid">
-    <div class="status-item"><div class="label">MQTT</div><div id="mqtt_status" class="value">-</div></div>
-    <div class="status-item"><div class="label">Serial</div><div id="serial_status" class="value">-</div></div>
-    <div class="status-item"><div class="label">Candidate Ports</div><div id="candidate_ports" class="value">-</div></div>
-    <div class="status-item"><div class="label">Last Packet</div><div id="last_packet" class="value">-</div></div>
-    <div class="status-item"><div class="label">Raw Lines / Parsed / Dropped</div><div id="serial_counts" class="value">-</div></div>
-    <div class="status-item"><div class="label">Last Raw Line</div><div id="last_raw_line" class="value">-</div></div>
+<main class="xt-main">
+<div class="xt-page-head">
+    <div>
+      <h1>Diagnostics</h1>
+      <div class="xt-page-sub">Serial port checks, raw status and recent traffic. Refreshes every 3 seconds.</div>
+    </div>
+    <div class="xt-page-actions">
+      <span id="updated_at" class="small"></span>
+      <button type="button" onclick="loadDiag()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg> Refresh</button>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h3>Serial Port Checks</h3>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Device</th><th>Source</th><th>Resolved</th><th>Access</th><th>Open Test</th><th>Details</th></tr></thead>
-      <tbody id="port_checks"><tr><td colspan="6">Loading...</td></tr></tbody>
-    </table>
+  <div id="diag_error" class="banner" role="alert"></div>
+
+  <section class="card" aria-label="Health summary">
+    <h3>Health summary</h3>
+    <div class="status-grid">
+      <div class="status-item"><div class="label">MQTT</div><div id="mqtt_status" class="value">-</div></div>
+      <div class="status-item"><div class="label">Serial</div><div id="serial_status" class="value">-</div></div>
+      <div class="status-item"><div class="label">Candidate ports</div><div id="candidate_ports" class="value">-</div></div>
+      <div class="status-item"><div class="label">Last packet</div><div id="last_packet" class="value">-</div></div>
+      <div class="status-item"><div class="label">Raw lines / parsed / dropped</div><div id="serial_counts" class="value">-</div></div>
+      <div class="status-item"><div class="label">Last raw line</div><div id="last_raw_line" class="value">-</div></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Serial port checks">
+    <h3>Serial port checks</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Device</th><th>Source</th><th>Resolved</th><th>Access</th><th>Open test</th><th>Details</th></tr></thead>
+        <tbody id="port_checks"><tr><td class="empty" colspan="6">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="row">
+    <section class="card col" aria-label="Status"><h3>Status</h3><pre id="status" class="console tall">Loading…</pre></section>
+    <section class="card col" aria-label="Recent logs"><h3>Recent logs</h3><pre id="logs" class="console tall">Loading…</pre></section>
   </div>
-</div>
+  <section class="card" aria-label="Recent packets"><h3>Recent packets</h3><pre id="packets" class="console tall">Loading…</pre></section>
 
-<div class="row">
-  <div class="col"><div class="card"><h3>Status</h3><pre id="status">Loading...</pre></div></div>
-  <div class="col"><div class="card"><h3>Recent Logs</h3><pre id="logs">Loading...</pre></div></div>
-</div>
-<div class="card"><h3>Recent Packets</h3><pre id="packets">Loading...</pre></div>
+  <footer class="xt-footer">
+    <span>Xtatech LoRa Bridge · <span data-app-version>v2.0.2</span></span>
+    <span>Times in Africa/Johannesburg</span>
+  </footer>
+</main>
 
 <script>
-async function loadAppVersion() {
-  try {
-    const r = await fetch('/api/version');
-    const j = await r.json();
-    document.querySelectorAll('[data-app-version]').forEach((el) => el.textContent = j.display || `v${j.version}`);
-  } catch {}
-}
-
-loadAppVersion();
-
 const tzOpts = { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
 
 function fmtTs(ts) {
@@ -142,18 +134,19 @@ function renderPortChecks(rt) {
   const details = rt.serial_candidate_details || [];
   const attempts = new Map((rt.serial_open_attempts || []).map((item) => [item.device, item]));
   if (details.length === 0) {
-    body.innerHTML = '<tr><td colspan="6">No serial candidates found. Check USB cable, power, and whether the LoRa board enumerates as /dev/ttyACM* or /dev/ttyUSB*.</td></tr>';
+    body.innerHTML = '<tr><td class="empty" colspan="6">No serial candidates found. Check USB cable, power, and whether the LoRa board enumerates as /dev/ttyACM* or /dev/ttyUSB*.</td></tr>';
     return;
   }
 
   body.innerHTML = '';
   for (const item of details) {
     const attempt = attempts.get(item.device) || {};
-    const openText = item.device === rt.active_serial_port ? 'ACTIVE' : (attempt.ok ? 'OK' : (attempt.error || '-'));
+    const openText = item.device === rt.active_serial_port ? 'Active' : (attempt.ok ? 'OK' : (attempt.error || '-'));
+    const openCls = item.device === rt.active_serial_port || attempt.ok ? 'ok' : (attempt.error ? 'bad' : '');
     const access = `${item.exists ? 'exists' : 'missing'} / R:${item.readable ? 'yes' : 'no'} W:${item.writable ? 'yes' : 'no'}`;
     const meta = [item.description, item.manufacturer, item.product, item.hwid].filter(Boolean).join(' | ');
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(item.device)}</td><td>${escapeHtml(item.source)}</td><td>${escapeHtml(item.resolved || '-')}</td><td>${escapeHtml(access)}</td><td>${escapeHtml(openText)}</td><td>${escapeHtml(meta || '-')}</td>`;
+    tr.innerHTML = `<td class="strong mono">${escapeHtml(item.device)}</td><td>${escapeHtml(item.source)}</td><td>${escapeHtml(item.resolved || '-')}</td><td>${escapeHtml(access)}</td><td><span class="pill ${openCls}">${escapeHtml(openText)}</span></td><td>${escapeHtml(meta || '-')}</td>`;
     body.appendChild(tr);
   }
 }
@@ -164,6 +157,7 @@ async function loadDiag() {
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     const j = await r.json();
     setError('');
+    document.getElementById('updated_at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour12: false });
     renderSummary(j.status || {});
     document.getElementById('status').textContent = JSON.stringify(j.status, null, 2);
     document.getElementById('logs').textContent = (j.recent_logs || []).length

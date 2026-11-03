@@ -1,106 +1,122 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Services</title>
+  <title>Services · Xtatech LoRa Bridge</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="icon" type="image/png" href="/xtatech.png"/>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f8f8f8; }
-    .card { background: white; border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-    .page-header { display: flex; align-items: center; gap: 14px; }
-    .page-header img { width: 120px; max-width: 34vw; height: auto; }
-    .page-header h2 { margin: 0 0 4px; }
-    .small { font-size: 12px; color: #666; }
-    .app-version { margin: -2px 0 2px; }
-    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-    .nav a { color: #164f8b; text-decoration: none; }
-    .nav a:hover { text-decoration: underline; }
-    .row { display: flex; flex-wrap: wrap; gap: 12px; }
-    .col { flex: 1; min-width: 320px; }
-    textarea { width: 100%; height: 500px; font-family: Consolas, Monaco, monospace; font-size: 13px; box-sizing: border-box; }
-    button { padding: 10px 14px; margin: 4px 6px 4px 0; cursor: pointer; border: 1px solid #cfcfcf; border-radius: 6px; background: #f6f6f6; }
-    button:hover { background: #ececec; }
-    button:disabled { opacity: .6; cursor: not-allowed; }
-    .danger { border-color: #ffa39e; background: #fff1f0; color: #8c1d18; }
-    .danger:hover { background: #ffe4e1; }
-    pre { white-space: pre-wrap; word-wrap: break-word; background: #111; color: #0f0; padding: 12px; min-height: 120px; overflow: auto; border-radius: 8px; }
-    .status { color: #666; font-size: 13px; }
-    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
-    .status-item { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; }
-    .status-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
-    .status-item .value { font-size: 16px; font-weight: bold; word-break: break-word; }
-    .ok { color: #0a7a2f; }
-    .bad { color: #b42318; }
-    .progress-wrap { display: none; margin: 12px 0; }
-    .progress-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 13px; color: #444; }
-    .progress-track { height: 14px; background: #e8e8e8; border: 1px solid #d6d6d6; border-radius: 7px; overflow: hidden; }
-    .progress-fill { width: 0%; height: 100%; background: #0a7a2f; transition: width .25s ease; }
-  </style>
+  <link rel="icon" type="image/png" href="/static/xtatech-mark.png"/>
+  <link rel="stylesheet" href="/static/app.css?v=2.1.0"/>
+  <script src="/static/app.js?v=2.1.0" defer></script>
 </head>
 <body>
-<div class="card">
-  <div class="page-header">
-    <img src="/xtatech.png" alt="Xtatech logo"/>
-    <div>
-      <h2>Services</h2>
-      <div class="small app-version">Version <span data-app-version>v2.0.2</span></div>
-      <div class="nav small"><a href="/">Dashboard</a><a href="/diagnostics">Diagnostics</a><a href="/metrics">Metrics</a><a href="/terminal">Terminal</a></div>
+<header class="xt-topbar">
+  <div class="xt-topbar-inner">
+    <a class="xt-brand" href="/">
+      <span class="xt-brand-mark"><img src="/static/xtatech-mark.png" alt="Xtatech"/></span>
+      <span class="xt-brand-text"><span class="xt-brand-name">LoRa Bridge</span><span class="xt-brand-sub">Xtatech</span></span>
+    </a>
+    <nav class="xt-nav" aria-label="Main">
+      <a href="/">Dashboard</a>
+      <a href="/services" aria-current="page">Services</a>
+      <a href="/diagnostics">Diagnostics</a>
+      <a href="/metrics">Metrics</a>
+      <a href="/ssh">SSH</a>
+      <a href="/terminal">Terminal</a>
+    </nav>
+    <div class="xt-health" aria-live="polite">
+      <span id="xt_health_mqtt" class="pill"><span class="dot"></span><span data-pill-text>MQTT</span></span>
+      <span id="xt_health_serial" class="pill"><span class="dot"></span><span data-pill-text>Serial</span></span>
     </div>
   </div>
-</div>
+</header>
 
-<div class="row">
-  <div class="col">
-    <div class="card">
-      <h3>Bridge Service</h3>
-      <div class="status-grid">
-        <div class="status-item"><div class="label">Bridge URL</div><div id="bridge_url" class="value">-</div></div>
-        <div class="status-item"><div class="label">MQTT</div><div id="mqtt_state" class="value">-</div></div>
-        <div class="status-item"><div class="label">Serial</div><div id="serial_state" class="value">-</div></div>
-        <div class="status-item"><div class="label">Uptime</div><div id="uptime" class="value">-</div></div>
-      </div>
-      <button data-action onclick="loadStatus()">Refresh Status</button>
-      <button data-action onclick="applyConfig()">Apply Config</button>
-      <button data-action onclick="restartService()">Restart Service</button>
-      <button data-action onclick="cloneRepo()">Check / Update GitHub Repo</button>
-      <button id="install_repo_button" data-action data-install-action onclick="installVerifiedRepo()" disabled>Install Verified Repo</button>
-      <button data-action class="danger" onclick="rebootPi()">Reboot Raspberry Pi</button>
-      <div id="clone_progress" class="progress-wrap" aria-live="polite">
-        <div class="progress-label">
-          <span id="clone_stage">Preparing download</span>
-          <strong id="clone_percent">0%</strong>
-        </div>
-        <div class="progress-track">
-          <div id="clone_fill" class="progress-fill"></div>
-        </div>
-      </div>
-      <pre id="service_status">Loading...</pre>
+<main class="xt-main">
+<div class="xt-page-head">
+    <div>
+      <h1>Services</h1>
+      <div class="xt-page-sub">Manage the bridge service, its configuration and software updates.</div>
     </div>
   </div>
-  <div class="col">
-    <div class="card">
-      <h3>Config</h3>
-      <textarea id="cfg">Loading...</textarea>
-      <br/>
-      <button onclick="loadConfig()">Reload Config</button>
-      <button onclick="saveConfig()">Save Config</button>
-      <span id="cfg_status" class="status"></span>
+
+  <div class="row">
+    <div class="col">
+      <section class="card" aria-label="Bridge service">
+        <div class="card-header"><h3>Bridge service</h3><span id="service_badge"></span></div>
+        <div class="status-grid two">
+          <div class="status-item"><div class="label">Bridge URL</div><div id="bridge_url" class="value">-</div></div>
+          <div class="status-item"><div class="label">Uptime</div><div id="uptime" class="value">-</div></div>
+          <div class="status-item"><div class="label">MQTT</div><div id="mqtt_state" class="value">-</div></div>
+          <div class="status-item"><div class="label">Serial</div><div id="serial_state" class="value">-</div></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="primary" data-action onclick="restartService()">Restart service</button>
+          <button type="button" data-action onclick="loadStatus()">Refresh status</button>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Software update">
+        <div class="card-header"><h3>Software update</h3><span class="small">Installed <span data-app-version>v2.0.2</span></span></div>
+        <p class="small" style="margin: 0">Downloads the latest version from GitHub into ~/Downloads, verifies it, then runs install.sh.</p>
+        <div id="clone_progress" class="progress-wrap" aria-live="polite">
+          <div class="progress-label">
+            <span id="clone_stage">Preparing download</span>
+            <strong id="clone_percent">0%</strong>
+          </div>
+          <div class="progress-track">
+            <div id="clone_fill" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" data-action onclick="cloneRepo()">Check for updates</button>
+          <button type="button" class="primary" id="install_repo_button" data-action data-install-action onclick="installVerifiedRepo()" disabled>Install verified update</button>
+        </div>
+      </section>
+
+      <section class="card danger-zone" aria-label="Danger zone">
+        <h3>Danger zone</h3>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+          <div>
+            <div style="font-weight: 600">Reboot Raspberry Pi</div>
+            <div class="small">The bridge goes offline for about a minute. Packets sent during that time are lost.</div>
+          </div>
+          <button type="button" class="danger" data-action onclick="rebootPi()">Reboot…</button>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Output">
+        <h3>Output</h3>
+        <pre id="service_status" class="console">Loading…</pre>
+      </section>
     </div>
+
+    <section class="card col" aria-label="Configuration">
+      <div class="card-header">
+        <div>
+          <h3>Configuration</h3>
+          <div class="small">config.yaml · <span id="cfg_status" class="cfg-status"></span></div>
+        </div>
+        <div class="tools">
+          <button type="button" onclick="loadConfig()">Reload</button>
+          <button type="button" class="primary" onclick="saveConfig()">Save</button>
+          <button type="button" data-action onclick="applyConfig()">Apply config</button>
+        </div>
+      </div>
+      <label for="cfg" class="visually-hidden">config.yaml</label>
+      <div class="editor">
+        <pre id="cfg_gutter" class="editor-gutter" aria-hidden="true">1</pre>
+        <textarea id="cfg" spellcheck="false" autocomplete="off" wrap="off">Loading…</textarea>
+      </div>
+      <div class="card-note">Save writes config.yaml. Apply config reloads it into the running bridge.</div>
+    </section>
   </div>
-</div>
+
+  <footer class="xt-footer">
+    <span>Xtatech LoRa Bridge · <span data-app-version>v2.0.2</span></span>
+    <span>Times in Africa/Johannesburg</span>
+  </footer>
+</main>
 
 <script>
-async function loadAppVersion() {
-  try {
-    const r = await fetch('/api/version');
-    const j = await r.json();
-    document.querySelectorAll('[data-app-version]').forEach((el) => el.textContent = j.display || `v${j.version}`);
-  } catch {}
-}
-
-loadAppVersion();
-
 const statusEl = document.getElementById('service_status');
 const cfgEl = document.getElementById('cfg');
 const cfgStatusEl = document.getElementById('cfg_status');
@@ -117,8 +133,9 @@ let busyState = false;
 let installEligible = false;
 let installEligibilityReason = 'Checking downloaded version';
 
-function setCfgStatus(text) {
+function setCfgStatus(text, dirty = false) {
   cfgStatusEl.textContent = text;
+  cfgStatusEl.className = 'cfg-status' + (dirty ? ' dirty' : '');
 }
 
 function setBusy(busy) {
@@ -191,6 +208,14 @@ function renderSummary(j) {
   document.getElementById('serial_state').textContent = rt.active_serial_port ? `${rt.active_serial_port} @ ${serial.baud || '-'}` : (rt.last_serial_error || 'Not connected');
   document.getElementById('serial_state').className = 'value ' + (rt.serial_ok ? 'ok' : 'bad');
   document.getElementById('uptime').textContent = fmtAge(rt.uptime_s);
+  setBadgeEl('service_badge', rt.serial_ok && mqtt.connected ? 'Running' : 'Degraded', rt.serial_ok && mqtt.connected ? 'ok' : 'warn');
+}
+
+function setBadgeEl(id, text, state) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `pill ${state || ''}`;
+  el.textContent = text;
 }
 
 async function fetchText(url, options = {}) {
@@ -226,7 +251,8 @@ async function loadConfig() {
   setCfgStatus('Loading config...');
   try {
     cfgEl.value = await fetchText('/api/config');
-    setCfgStatus('Config loaded.');
+    updateGutter();
+    setCfgStatus('Loaded from config.yaml');
   } catch (err) {
     setCfgStatus('Load failed: ' + err.message);
   }
@@ -240,7 +266,7 @@ async function saveConfig() {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       body: cfgEl.value
     });
-    setCfgStatus('Config saved.');
+    setCfgStatus('Saved. Use Apply config to load it into the bridge.');
   } catch (err) {
     setCfgStatus('Save failed: ' + err.message);
   }
@@ -413,6 +439,29 @@ async function rebootPi() {
     setBusy(false);
   }
 }
+
+const gutterEl = document.getElementById('cfg_gutter');
+
+function updateGutter() {
+  const lines = cfgEl.value.split('\n').length;
+  let out = '';
+  for (let i = 1; i <= lines; i += 1) out += i + '\n';
+  gutterEl.textContent = out;
+  gutterEl.scrollTop = cfgEl.scrollTop;
+}
+
+cfgEl.addEventListener('input', () => {
+  updateGutter();
+  setCfgStatus('Unsaved changes', true);
+});
+cfgEl.addEventListener('scroll', () => { gutterEl.scrollTop = cfgEl.scrollTop; });
+cfgEl.addEventListener('keydown', (event) => {
+  if (event.key !== 'Tab' || event.shiftKey) return;
+  event.preventDefault();
+  const start = cfgEl.selectionStart;
+  cfgEl.setRangeText('  ', start, cfgEl.selectionEnd, 'end');
+  cfgEl.dispatchEvent(new Event('input'));
+});
 
 loadStatus();
 loadConfig();
