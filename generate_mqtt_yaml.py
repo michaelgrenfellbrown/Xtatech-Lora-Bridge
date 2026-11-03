@@ -39,6 +39,9 @@ NODES = [
     ("Aqua012", "aqua12", "LoRa Sensor Node", BURIED_FIELDS),
     ("Aqua013", "aqua013", "LoRa Sensor Node", BURIED_FIELDS),
     ("Aqua101", "aqua101", "LoRa Above Ground Sensor Node", ABOVE_GROUND_FIELDS),
+    # Lux01 does not publish RSSI in its state payload.
+    ("Lux01", "lux01", "LoRa Above Ground Sensor Node",
+     [field for field in ABOVE_GROUND_FIELDS if field[-1] != "rssi"]),
 ]
 
 GATEWAY_ID = "pi-zero2-gw01"

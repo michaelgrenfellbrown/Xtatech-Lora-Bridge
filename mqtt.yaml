@@ -1201,3 +1201,84 @@ sensor:
     force_update: true
     device_class: timestamp
     device: *device_aqua101
+
+  - name: "Lux01 Battery"
+    unique_id: "lora_lux01_bat"
+    default_entity_id: "sensor.lora_lux01_lux01_battery"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.bat | default(None) }}"
+    force_update: true
+    device_class: voltage
+    state_class: measurement
+    unit_of_measurement: "V"
+    device: &device_lux01
+      identifiers:
+        - "lora_lux01"
+      name: "LoRa Lux01"
+      manufacturer: "Xtatech"
+      model: "LoRa Above Ground Sensor Node"
+  - name: "Lux01 Temperature"
+    unique_id: "lora_lux01_temp"
+    default_entity_id: "sensor.lora_lux01_lux01_temperature"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.temp | default(None) }}"
+    force_update: true
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    device: *device_lux01
+  - name: "Lux01 Humidity"
+    unique_id: "lora_lux01_humi"
+    default_entity_id: "sensor.lora_lux01_lux01_humidity"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.humi | default(None) }}"
+    force_update: true
+    device_class: humidity
+    state_class: measurement
+    unit_of_measurement: "%"
+    device: *device_lux01
+  - name: "Lux01 eCO2"
+    unique_id: "lora_lux01_eco2"
+    default_entity_id: "sensor.lora_lux01_lux01_eco2"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.eco2 | default(None) }}"
+    force_update: true
+    device_class: carbon_dioxide
+    state_class: measurement
+    unit_of_measurement: "ppm"
+    device: *device_lux01
+  - name: "Lux01 Illuminance"
+    unique_id: "lora_lux01_lux"
+    default_entity_id: "sensor.lora_lux01_lux01_illuminance"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.lux | default(None) }}"
+    force_update: true
+    device_class: illuminance
+    state_class: measurement
+    unit_of_measurement: "lx"
+    device: *device_lux01
+  - name: "Lux01 Sleep"
+    unique_id: "lora_lux01_sleep"
+    default_entity_id: "sensor.lora_lux01_lux01_sleep"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.SLEEP | default(None) }}"
+    force_update: true
+    state_class: measurement
+    unit_of_measurement: "s"
+    device: *device_lux01
+  - name: "Lux01 Count"
+    unique_id: "lora_lux01_count"
+    default_entity_id: "sensor.lora_lux01_lux01_count"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.COUNT | default(None) }}"
+    force_update: true
+    state_class: total_increasing
+    device: *device_lux01
+  - name: "Lux01 Last Seen"
+    unique_id: "lora_lux01_last_seen"
+    default_entity_id: "sensor.lora_lux01_lux01_last_seen"
+    state_topic: "lora/Lux01/state"
+    value_template: "{{ value_json.ts_iso | default(None) }}"
+    force_update: true
+    device_class: timestamp
+    device: *device_lux01
