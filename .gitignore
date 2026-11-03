@@ -6,3 +6,4 @@ certs/
 *.bak
 *.tmp
 .env
+exports/
